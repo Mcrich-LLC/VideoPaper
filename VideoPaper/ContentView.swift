@@ -18,7 +18,7 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                WrappingHStack(alignment: .leading, horizontalSpacing: 15, verticalSpacing: 15) {
+                LazyVGrid(columns: [.init(.adaptive(minimum: 150, maximum: 150))], alignment: .leading) {
                     ForEach(jsonWallpaperCoordinator.assets) { asset in
                         if let thumbnailImage = asset.thumbnailImage {
                             Image(nsImage: thumbnailImage)
