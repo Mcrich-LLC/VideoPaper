@@ -102,7 +102,7 @@ struct JsonCategory: Codable, Identifiable {
     let representativeAssetID: String
 }
 
-struct JsonAsset: Codable, Identifiable {
+struct JsonAsset: Codable, Asset {
     let id: UUID
     let showInTopLevel: Bool
     let shotID: String
@@ -116,7 +116,7 @@ struct JsonAsset: Codable, Identifiable {
     let subcategories: [String]
     let preferredOrder: Int
     let categories: [String]
-    
+
     var thumbnailImage: NSImage? {
         guard let previewImageURL = URL(string: previewImage), let data = try? Data(contentsOf: previewImageURL) else {
             return nil
@@ -124,4 +124,21 @@ struct JsonAsset: Codable, Identifiable {
         
         return NSImage(data: data)
     }
+}
+
+protocol Asset: Identifiable {
+    var id: UUID { get }
+    var showInTopLevel: Bool { get }
+    var shotID: String { get }
+    var localizedNameKey: String { get }
+    var accessibilityLabel: String { get }
+    var previewImage: String { get }
+    var `previewImage-900x580`: String { get }
+    var pointsOfInterest: [String : String] { get }
+    var includeInShuffle: Bool { get }
+    var `url-4K-SDR-240FPS`: URL { get }
+    var subcategories: [String] { get }
+    var preferredOrder: Int { get }
+    var categories: [String] { get }
+    var thumbnailImage: NSImage? { get }
 }

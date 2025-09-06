@@ -14,25 +14,36 @@ struct ContentView: View {
     @Query private var items: [SDWallpaperVideo]
     @State var jsonWallpaperCoordinator = JsonWallpaperCoordinator()
     @State private var isPresentingInspector = true
+    @State private var inspectedAsset: Binding<JsonAsset>?
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 LazyVGrid(columns: [.init(.adaptive(minimum: 150, maximum: 150))], alignment: .leading) {
-                    ForEach(jsonWallpaperCoordinator.assets) { asset in
+                    ForEach($jsonWallpaperCoordinator.filteredAssets) { $asset in
                         if let thumbnailImage = asset.thumbnailImage {
-                            Image(nsImage: thumbnailImage)
-                                .resizable()
-                                .aspectRatio(1, contentMode: .fill)
-                                .frame(width: 150, height: 150)
-                                .clipShape(RoundedRectangle(cornerRadius: 26))
+                            Button {
+                                inspectedAsset = $asset
+                                isPresentingInspector = true
+                            } label: {
+                                Image(nsImage: thumbnailImage)
+                                    .resizable()
+                                    .aspectRatio(1, contentMode: .fill)
+                            }
+                            .frame(width: 150, height: 150)
+                            .clipShape(RoundedRectangle(cornerRadius: 26))
+                            .buttonStyle(.plain)
                         }
                     }
                 }
                 .padding()
             }
             .inspector(isPresented: $isPresentingInspector, content: {
-                Text("Test")
+                if let inspectedAsset {
+                    WallpaperDetailView(boundItem: inspectedAsset)
+                } else {
+                    Text("Select a Wallpaper")
+                }
             })
             .inspectorColumnWidth(ideal: 150)
             .toolbar {
