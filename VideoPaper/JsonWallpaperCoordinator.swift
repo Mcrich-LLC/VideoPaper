@@ -8,6 +8,7 @@
 import Foundation
 import Playgrounds
 import AppKit
+import AVFoundation
 
 @Observable
 final class JsonWallpaperCoordinator {
@@ -112,7 +113,7 @@ struct JsonAsset: Codable, Asset {
     let `previewImage-900x580`: String
     let pointsOfInterest: [String : String]
     let includeInShuffle: Bool
-    let `url-4K-SDR-240FPS`: URL
+    let `url-4K-SDR-240FPS`: String
     let subcategories: [String]
     let preferredOrder: Int
     let categories: [String]
@@ -123,6 +124,17 @@ struct JsonAsset: Codable, Asset {
         }
         
         return NSImage(data: data)
+    }
+    
+    var videoItem: AVPlayer? {
+        guard let videoUrl = URL(string: `url-4K-SDR-240FPS`) else {
+            return nil
+        }
+        
+        let player = AVPlayer(url: videoUrl)
+        player.play()
+        player.volume = 0
+        return player
     }
 }
 
@@ -136,9 +148,10 @@ protocol Asset: Identifiable {
     var `previewImage-900x580`: String { get }
     var pointsOfInterest: [String : String] { get }
     var includeInShuffle: Bool { get }
-    var `url-4K-SDR-240FPS`: URL { get }
+    var `url-4K-SDR-240FPS`: String { get }
     var subcategories: [String] { get }
     var preferredOrder: Int { get }
     var categories: [String] { get }
     var thumbnailImage: NSImage? { get }
+    var videoItem: AVPlayer? { get }
 }

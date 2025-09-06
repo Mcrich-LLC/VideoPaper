@@ -39,13 +39,15 @@ struct ContentView: View {
                 .padding()
             }
             .inspector(isPresented: $isPresentingInspector, content: {
-                if let inspectedAsset {
-                    WallpaperDetailView(boundItem: inspectedAsset)
-                } else {
-                    Text("Select a Wallpaper")
+                Group {
+                    if let inspectedAsset {
+                        WallpaperDetailView(boundItem: inspectedAsset)
+                    } else {
+                        Text("Select a Wallpaper")
+                    }
                 }
+                .inspectorColumnWidth(min: 150, ideal: 225, max: 400)
             })
-            .inspectorColumnWidth(ideal: 150)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("\(isPresentingInspector ? "Hide" : "Show") Inspector", systemImage: "sidebar.right") {
