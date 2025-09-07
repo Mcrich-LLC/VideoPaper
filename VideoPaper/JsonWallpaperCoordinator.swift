@@ -116,7 +116,7 @@ final class JsonWallpaperCoordinator {
             ], representativeAssetID: lastCategory.representativeAssetID))
         }
 
-        filteredAssets.removeAll(where: { $0.`url-4K-SDR-240FPS`.isEmpty || $0.previewImage.isEmpty })
+        filteredAssets.removeAll(where: { $0.videoURL.isEmpty || $0.previewImage.isEmpty })
         
         if preAdjustFilteredAssets != filteredAssets || preAdjustFilteredCategories != filteredCategories {
             try saveData()
@@ -146,7 +146,7 @@ final class JsonWallpaperCoordinator {
         
         for asset in filteredAssets {
             guard let previewImageUrl = URL(string: asset.previewImage),
-                  let videoUrl = URL(string: asset.`url-4K-SDR-240FPS`)
+                  let videoUrl = URL(string: asset.videoURL)
             else {
                 continue
             }
@@ -178,12 +178,12 @@ final class JsonWallpaperCoordinator {
             let cachePreviewImageURL = wallpaperThumbnailFolderURL.appending(path: "\(asset.id.uuidString).\(previewImageUrl.pathExtension)")
             try? FileManager.default.removeItem(at: cachePreviewImageURL)
         }
-        if let videoUrl = URL(string: asset.`url-4K-SDR-240FPS`) {
+        if let videoUrl = URL(string: asset.videoURL) {
             let cacheVideoURL = wallpaperVideosFolderURL.appending(path: "\(asset.id.uuidString).\(videoUrl.pathExtension)")
             try? FileManager.default.removeItem(at: cacheVideoURL)
         }
         
-        let shouldRestartServices = !asset.`url-4K-SDR-240FPS`.isEmpty || !asset.previewImage.isEmpty
+        let shouldRestartServices = !asset.videoURL.isEmpty || !asset.previewImage.isEmpty
         try saveData(restartServices: shouldRestartServices)
     }
     
@@ -259,21 +259,13 @@ struct JsonAsset: Codable, Asset {
     let subcategories: [String]
     var preferredOrder: Int
     let categories: [String]
-
-    var thumbnailImage: NSImage? {
-        guard let previewImageURL = URL(string: previewImage), let data = try? Data(contentsOf: previewImageURL) else {
-            return nil
-        }
-        
-        return NSImage(data: data)
-    }
     
-    var videoItem: AVPlayerItem? {
-        guard let videoUrl = URL(string: `url-4K-SDR-240FPS`) else {
-            return nil
+    var videoURL: String {
+        get {
+            `url-4K-SDR-240FPS`
         }
-        
-        let player = AVPlayerItem(url: videoUrl)
-        return player
+        set {
+            `url-4K-SDR-240FPS` = newValue
+        }
     }
 }

@@ -3,4 +3,22 @@
    uuid = "C40289D7-A3BF-4226-BF85-8393EA5F980F"
    type = "1"
    version = "2.0">
+   <Breakpoints>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "F52D9BE0-9CA9-4009-9CD9-24FC3ECCE8A3"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "../../../../var/folders/q9/scrnbjsj1rvd3qvx4fn0wlmr0000gn/T/swift-generated-sources/@__swiftmacro_10VideoPaper011SDWallpaperA05ModelfMe_.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "1"
+            endingLineNumber = "1"
+            landmarkName = "unknown"
+            landmarkType = "0">
+         </BreakpointContent>
+      </BreakpointProxy>
+   </Breakpoints>
 </Bucket>

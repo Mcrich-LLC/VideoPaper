@@ -90,7 +90,7 @@ struct WallpaperDetailView<A: Asset>: View {
                                 Label("Save", systemImage: "checkmark")
                                     .frame(maxWidth: .infinity)
                             }
-                            .disabled(editableItem.`url-4K-SDR-240FPS`.isEmpty || editableItem.previewImage.isEmpty || boundItem == editableItem)
+                            .disabled(editableItem.videoURL.isEmpty || editableItem.previewImage.isEmpty || boundItem == editableItem)
                             .tint(.accentColor)
                         }
                         Divider()
@@ -112,7 +112,7 @@ struct WallpaperDetailView<A: Asset>: View {
         .alert(for: $errorAlertItem)
         .onChange(of: boundItem, { oldValue, newValue in
             if oldValue.id != newValue.id {
-                if oldValue.`url-4K-SDR-240FPS`.isEmpty || oldValue.previewImage.isEmpty {
+                if oldValue.videoURL.isEmpty || oldValue.previewImage.isEmpty {
                     if let oldValue = oldValue as? JsonAsset {
                         try? jsonWallpaperCoordinator.deleteAsset(oldValue)
                     }
@@ -124,7 +124,7 @@ struct WallpaperDetailView<A: Asset>: View {
             }
         })
         .onDisappear(perform: {
-            if boundItem.`url-4K-SDR-240FPS`.isEmpty || boundItem.previewImage.isEmpty {
+            if boundItem.videoURL.isEmpty || boundItem.previewImage.isEmpty {
                 if let boundItem = boundItem as? JsonAsset {
                     try? jsonWallpaperCoordinator.deleteAsset(boundItem)
                 }
@@ -148,9 +148,8 @@ struct WallpaperDetailView<A: Asset>: View {
         boundItem.includeInShuffle = editableItem.includeInShuffle
         boundItem.pointsOfInterest = editableItem.pointsOfInterest
         boundItem.showInTopLevel = editableItem.showInTopLevel
-        boundItem.`url-4K-SDR-240FPS` = editableItem.`url-4K-SDR-240FPS`
+        boundItem.videoURL = editableItem.videoURL
         boundItem.previewImage = editableItem.previewImage
-        boundItem.`previewImage-900x580` = editableItem.`previewImage-900x580`
         try? jsonWallpaperCoordinator.saveData()
     }
 }
@@ -207,7 +206,7 @@ struct WallpaperVideoPlayer<A: Asset>: View {
         .fileImporter(isPresented: $isShowingVideoImporter, allowedContentTypes: [.quickTimeMovie]) { result in
             switch result {
             case .success(let success):
-                boundItem.`url-4K-SDR-240FPS` = success.absoluteString
+                boundItem.videoURL = success.absoluteString
                 updateVideo()
             case .failure(let failure):
                 print(failure)
@@ -216,7 +215,7 @@ struct WallpaperVideoPlayer<A: Asset>: View {
         }
         .alert(for: $errorAlertItem)
         .buttonStyle(.plain)
-        .onChange(of: boundItem.`url-4K-SDR-240FPS`, initial: true) { oldValue, newValue in
+        .onChange(of: boundItem.videoURL, initial: true) { oldValue, newValue in
             guard oldValue != newValue || videoItem == nil else {
                 return
             }
