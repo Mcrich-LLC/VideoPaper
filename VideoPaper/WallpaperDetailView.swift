@@ -274,6 +274,10 @@ private struct AVPlayerControllerRepresented: NSViewRepresentable {
         // If current item isn’t matching, reset looper
         if (nsView.player?.currentItem?.asset as? AVURLAsset)?.url != (playerItem.asset as? AVURLAsset)?.url {
             queuePlayer.removeAllItems()
+            nsView.player = nil
+            
+            let queuePlayer = AVQueuePlayer()
+            nsView.player = queuePlayer
             
             let looper = AVPlayerLooper(player: queuePlayer, templateItem: playerItem)
             context.coordinator.looper = looper
