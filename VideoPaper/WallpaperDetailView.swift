@@ -249,13 +249,39 @@ struct WallpaperVideoPlayer<A: Asset>: View {
         }
         
         // Ensure subdirectory for your app exists
-        let appDir = URL.applicationSupportDirectory
+        guard let appDir = getApplicationSupportDirectory() else { return nil }
         
         // Save thumbnail
         let fileURL = appDir.appendingPathComponent("\(UUID().uuidString).png")
         try pngData.write(to: fileURL)
         
         return fileURL
+    }
+}
+
+func getApplicationSupportDirectory() -> URL? {
+    // Get the URL for the user's Application Support directory.
+    guard let appSupportURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+        print("Could not find the Application Support directory.")
+        return nil
+    }
+
+    // Get the bundle identifier of your application.
+    guard let bundleIdentifier = Bundle.main.bundleIdentifier else {
+        print("Could not get the application's bundle identifier.")
+        return nil
+    }
+
+    // Append the bundle identifier to create a specific directory for your app.
+    let appSpecificSupportURL = appSupportURL.appendingPathComponent(bundleIdentifier)
+
+    // Create the directory if it doesn't exist.
+    do {
+        try FileManager.default.createDirectory(at: appSpecificSupportURL, withIntermediateDirectories: true, attributes: nil)
+        return appSpecificSupportURL
+    } catch {
+        print("Error creating application support directory: \(error.localizedDescription)")
+        return nil
     }
 }
 

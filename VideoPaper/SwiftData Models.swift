@@ -41,6 +41,10 @@ final class SDWallpaperVideo: Asset {
         self.preferredOrder = preferredOrder
         self.categories = categories
     }
+    
+    func asJson() -> JsonAsset {
+        JsonAsset(id: id, showInTopLevel: showInTopLevel, shotID: shotID, localizedNameKey: localizedNameKey, accessibilityLabel: accessibilityLabel, previewImage: previewImage, `previewImage-900x580`: "", pointsOfInterest: pointsOfInterest, includeInShuffle: includeInShuffle, `url-4K-SDR-240FPS`: videoURL, subcategories: subcategories, preferredOrder: preferredOrder, categories: categories)
+    }
 }
 
 @Model
@@ -61,5 +65,9 @@ final class SDCategory: Category {
         self.preferredOrder = preferredOrder
         self.subcategories = subcategories
         self.representativeAssetID = representativeAssetID
+    }
+    
+    func asJson() -> JsonCategory {
+        JsonCategory(id: id, localizedNameKey: localizedNameKey, previewImage: previewImage, localizedDescriptionKey: localizedDescriptionKey, preferredOrder: preferredOrder, representativeAssetID: representativeAssetID)
     }
 }

@@ -10,44 +10,75 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query private var items: [SDWallpaperVideo]
+    @Query private var sdAssets: [SDWallpaperVideo]
+    @Query private var sdCategories: [SDCategory]
     @State var jsonWallpaperCoordinator = JsonWallpaperCoordinator()
     @State private var isPresentingInspector = true
     @State private var inspectedAsset: UUID?
+    
+    @ViewBuilder
+    var assetView: some View {
+        if jsonWallpaperCoordinator.filteredAssets.isEmpty {
+            Text("You don't have any custom wallpapers. Press the + button to get started.")
+        } else {
+            ScrollView {
+                LazyVGrid(columns: [.init(.adaptive(minimum: 150, maximum: 150))], alignment: .leading) {
+                    ForEach(jsonWallpaperCoordinator.filteredAssets) { asset in
+                        if let thumbnailImage = asset.thumbnailImage {
+                            Button {
+                                withAnimation {
+                                    inspectedAsset = asset.id
+                                    isPresentingInspector = true
+                                }
+                            } label: {
+                                VStack {
+                                    Image(nsImage: thumbnailImage)
+                                        .resizable()
+                                        .aspectRatio(1, contentMode: .fill)
+                                        .frame(width: 150, height: 150)
+                                        .clipShape(RoundedRectangle(cornerRadius: 26))
+                                    Text(asset.localizedNameKey)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+                .padding()
+            }
+        }
+    }
 
     var body: some View {
         NavigationStack {
             Group {
                 if jsonWallpaperCoordinator.assets.isEmpty {
                     ProgressView("Fetching Wallpapers...")
-                } else if jsonWallpaperCoordinator.filteredAssets.isEmpty {
-                    Text("You don't have any custom wallpapers. Press the + button to get started.")
                 } else {
-                    ScrollView {
-                        LazyVGrid(columns: [.init(.adaptive(minimum: 150, maximum: 150))], alignment: .leading) {
-                            ForEach(jsonWallpaperCoordinator.filteredAssets) { asset in
-                                if let thumbnailImage = asset.thumbnailImage {
-                                    Button {
-                                        withAnimation {
-                                            inspectedAsset = asset.id
-                                            isPresentingInspector = true
-                                        }
-                                    } label: {
-                                        VStack {
-                                            Image(nsImage: thumbnailImage)
-                                                .resizable()
-                                                .aspectRatio(1, contentMode: .fill)
-                                                .frame(width: 150, height: 150)
-                                                .clipShape(RoundedRectangle(cornerRadius: 26))
-                                            Text(asset.localizedNameKey)
-                                        }
-                                    }
-                                    .buttonStyle(.plain)
+                    assetView
+                        .onAppear {
+                            loadSwiftData()
+                        }
+                        .onChange(of: jsonWallpaperCoordinator.filteredAssets) { _, newValue in
+                            for asset in newValue where !sdAssets.contains(where: { $0.id == asset.id }) {
+                                do {
+                                    let model = try asset.asModel()
+                                    modelContext.insert(model)
+                                } catch {
+                                    print("❌ Swift Data Model Saving: \(error)")
                                 }
                             }
+                            
+                            try? modelContext.save()
                         }
-                        .padding()
-                    }
+                        .onChange(of: jsonWallpaperCoordinator.filteredCategories) { _, newValue in
+                            for category in newValue where !sdCategories.contains(where: { $0.id == category.id }) {
+                                let model = category.asModel()
+                                modelContext.insert(model)
+                            }
+                            
+                            try? modelContext.save()
+                        }
                 }
             }
             .inspector(isPresented: $isPresentingInspector, content: {
@@ -102,6 +133,10 @@ struct ContentView: View {
                     self.inspectedAsset = nil
                     DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(10)) {
                         try? jsonWallpaperCoordinator.deleteAsset(for: inspectedAsset)
+                        if let sdObject = sdAssets.first(where: { $0.id == inspectedAsset }) {
+                            modelContext.delete(sdObject)
+                            try? modelContext.save()
+                        }
                     }
                 }
             } else {
@@ -109,6 +144,49 @@ struct ContentView: View {
             }
         } else {
             Text("Select a Wallpaper")
+        }
+    }
+    
+    func loadSwiftData() {
+        let preAdjustFilteredCategories = jsonWallpaperCoordinator.filteredCategories
+        let preAdjustFilteredAssets = jsonWallpaperCoordinator.filteredAssets
+        
+        // Add missing Assets
+        for sdAsset in sdAssets where !jsonWallpaperCoordinator.assets.contains(where: { $0.id == sdAsset.id }) {
+            guard let appDir = getApplicationSupportDirectory() else { continue }
+            
+            if !FileManager.default.fileExists(atPath: sdAsset.videoURL) {
+                do {
+                    let newUrl = appDir.appending(path: "\(UUID().uuidString).mov")
+                    try sdAsset.video.write(to: newUrl)
+                    sdAsset.videoURL = newUrl.absoluteString
+                } catch {
+                    print("❌ Swift Data Video Recovery: \(error)")
+                }
+            }
+            if !FileManager.default.fileExists(atPath: sdAsset.previewImage) {
+                do {
+                    let newUrl = appDir.appending(path: "\(UUID().uuidString).png")
+                    try sdAsset.thumbnail.write(to: newUrl)
+                    sdAsset.previewImage = newUrl.absoluteString
+                } catch {
+                    print("❌ Swift Data Thumbnail Recovery: \(error)")
+                }
+            }
+            guard let category = jsonWallpaperCoordinator.filteredCategories.last else { continue }
+            sdAsset.categories = [category.id.uuidString]
+            sdAsset.subcategories = (category.subcategories ?? []).map({ $0.id.uuidString })
+            jsonWallpaperCoordinator.filteredAssets.append(sdAsset.asJson())
+        }
+        
+        for sdCategory in sdCategories where !jsonWallpaperCoordinator.categories.contains(where: { $0.id == sdCategory.id }) {
+            jsonWallpaperCoordinator.filteredCategories.append(sdCategory.asJson())
+        }
+        
+        try? modelContext.save()
+        
+        if jsonWallpaperCoordinator.filteredAssets != preAdjustFilteredAssets || jsonWallpaperCoordinator.filteredCategories != preAdjustFilteredCategories {
+            try? jsonWallpaperCoordinator.saveData()
         }
     }
 }

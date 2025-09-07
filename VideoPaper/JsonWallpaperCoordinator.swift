@@ -243,6 +243,10 @@ struct JsonCategory: Codable, Category {
     var preferredOrder: Int
     var subcategories: [JsonCategory]?
     var representativeAssetID: String
+    
+    func asModel() -> SDCategory {
+        SDCategory(id: id, localizedNameKey: localizedNameKey, previewImage: previewImage, localizedDescriptionKey: localizedDescriptionKey, preferredOrder: preferredOrder, subcategories: subcategories?.map({ $0.asModel() }), representativeAssetID: representativeAssetID)
+    }
 }
 
 struct JsonAsset: Codable, Asset {
@@ -267,5 +271,12 @@ struct JsonAsset: Codable, Asset {
         set {
             `url-4K-SDR-240FPS` = newValue
         }
+    }
+    
+    func asModel() throws -> SDWallpaperVideo {
+        guard let videoURL = URL(string: videoURL) else { throw JsonWallpaperError.assetNotFound }
+        guard let previewImageUrl = URL(string: previewImage) else { throw JsonWallpaperError.assetNotFound }
+        
+        return try SDWallpaperVideo(video: Data(contentsOf: videoURL), thumbnail: Data(contentsOf: previewImageUrl), id: id, showInTopLevel: showInTopLevel, shotID: shotID, localizedNameKey: localizedNameKey, accessibilityLabel: accessibilityLabel, previewImage: previewImage, pointsOfInterest: pointsOfInterest, includeInShuffle: includeInShuffle, videoURL: self.videoURL, subcategories: subcategories, preferredOrder: preferredOrder, categories: categories)
     }
 }
