@@ -105,6 +105,11 @@ final class JsonWallpaperCoordinator {
         let object = try JSONDecoder().decode(JsonObject.self, from: data)
         
         self.jsonObject = object
+        
+        if filteredAssets.contains(where: { $0.`url-4K-SDR-240FPS`.isEmpty || $0.previewImage.isEmpty }) {
+            filteredAssets.removeAll(where: { $0.`url-4K-SDR-240FPS`.isEmpty || $0.previewImage.isEmpty })
+            try saveData()
+        }
     }
     
     func saveData(restartServices: Bool = true) throws {
