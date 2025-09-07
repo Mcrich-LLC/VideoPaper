@@ -15,6 +15,7 @@ struct WallpaperDetailView<A: Asset>: View {
     @State private var errorAlertItem: Error?
     
     @Environment(JsonWallpaperCoordinator.self) var jsonWallpaperCoordinator
+    @State var isShowingSavedInlineMessage = false
     
     var body: some View {
         VStack {
@@ -52,30 +53,48 @@ struct WallpaperDetailView<A: Asset>: View {
             }
             
             GroupBox {
-                HStack {
-                    if let onDelete {
-                        Button(role: .destructive) {
-                            onDelete()
+                if isShowingSavedInlineMessage {
+                    Label("Saved", systemImage: "checkmark")
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 4)
+                        .foregroundStyle(.white)
+                        .background(Color.accentColor, in: ConcentricRectangle())
+                } else {
+                    HStack {
+                        if let onDelete {
+                            Button(role: .destructive) {
+                                onDelete()
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .tint(.red)
+                        }
+                        
+                        Button {
+                            try? jsonWallpaperCoordinator.saveData()
+                            isShowingSavedInlineMessage = true
                         } label: {
-                            Label("Delete", systemImage: "trash")
+                            Label("Save", systemImage: "checkmark")
                                 .frame(maxWidth: .infinity)
                         }
-                        .tint(.red)
+                        .tint(.accentColor)
                     }
-                    
-                    Button {
-                        try? jsonWallpaperCoordinator.saveData()
-                    } label: {
-                        Label("Save", systemImage: "checkmark")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .tint(.accentColor)
                 }
             }
             Spacer()
         }
         .padding(.horizontal)
         .alert(for: $errorAlertItem)
+        .onChange(of: isShowingSavedInlineMessage) { _, newValue in
+            guard newValue else {
+                return
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(2)) {
+                isShowingSavedInlineMessage = false
+            }
+        }
+        .animation(.default, value: isShowingSavedInlineMessage)
     }
 }
 
