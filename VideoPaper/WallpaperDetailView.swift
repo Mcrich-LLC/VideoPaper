@@ -63,6 +63,7 @@ struct WallpaperVideoPlayer<A: Asset>: View {
     @State private var errorAlertItem: Error?
     
     @State var videoItem: AVPlayerItem?
+    @Environment(JsonWallpaperCoordinator.self) var jsonWallpaperCoordinator
     
     var body: some View {
         Group {
@@ -108,7 +109,14 @@ struct WallpaperVideoPlayer<A: Asset>: View {
             switch result {
             case .success(let success):
                 boundItem.`url-4K-SDR-240FPS` = success.absoluteString
-                videoItem = boundItem.videoItem
+                let videoItem = boundItem.videoItem
+                self.videoItem = videoItem
+                Task {
+                    if let url = try await generateThumbnail() {
+                        boundItem.previewImage = url.absoluteString
+                    }
+                    try jsonWallpaperCoordinator.saveData()
+                }
             case .failure(let failure):
                 print(failure)
                 errorAlertItem = failure
@@ -119,6 +127,31 @@ struct WallpaperVideoPlayer<A: Asset>: View {
         .onAppear {
             videoItem = boundItem.videoItem
         }
+    }
+
+    func generateThumbnail(at time: CMTime = CMTime(seconds: 0, preferredTimescale: 600)) async throws -> URL? {
+        guard let videoItem else { return nil }
+        let generator = AVAssetImageGenerator(asset: videoItem.asset)
+        generator.appliesPreferredTrackTransform = true
+        
+        let (cgImage, _) = try await generator.image(at: time)
+        let nsImage = NSImage(cgImage: cgImage, size: .zero)
+        
+        // Convert NSImage to PNG data
+        guard let tiffData = nsImage.tiffRepresentation,
+              let bitmap = NSBitmapImageRep(data: tiffData),
+              let pngData = bitmap.representation(using: .png, properties: [:]) else {
+            return nil
+        }
+        
+        // Ensure subdirectory for your app exists
+        let appDir = URL.applicationSupportDirectory
+        
+        // Save thumbnail
+        let fileURL = appDir.appendingPathComponent("\(boundItem.id.uuidString).png")
+        try pngData.write(to: fileURL)
+        
+        return fileURL
     }
 }
 

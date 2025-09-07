@@ -44,13 +44,13 @@ struct ContentView: View {
                         }
                         .padding()
                     }
-                    .onChange(of: jsonWallpaperCoordinator.assets, {
-                        do {
-                            try jsonWallpaperCoordinator.saveData()
-                        } catch {
-                            print(error)
-                        }
-                    })
+//                    .onChange(of: jsonWallpaperCoordinator.assets, {
+//                        do {
+//                            try jsonWallpaperCoordinator.saveData()
+//                        } catch {
+//                            print(error)
+//                        }
+//                    })
                 }
             }
             .inspector(isPresented: $isPresentingInspector, content: {
