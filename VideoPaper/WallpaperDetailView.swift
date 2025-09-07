@@ -10,6 +10,7 @@ import AVKit
 
 struct WallpaperDetailView<A: Asset>: View {
     @Binding var boundItem: A
+    let onDelete: () -> Void
     @State private var isShowingThumbnailFileImporter = false
     @State private var errorAlertItem: Error?
     
@@ -48,6 +49,26 @@ struct WallpaperDetailView<A: Asset>: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
+            }
+            
+            GroupBox {
+                HStack {
+                    Button(role: .destructive) {
+                        onDelete()
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .tint(.red)
+                    
+                    Button {
+                        try? jsonWallpaperCoordinator.saveData()
+                    } label: {
+                        Label("Save", systemImage: "checkmark")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .tint(.accentColor)
+                }
             }
             Spacer()
         }
@@ -109,14 +130,6 @@ struct WallpaperVideoPlayer<A: Asset>: View {
             switch result {
             case .success(let success):
                 boundItem.`url-4K-SDR-240FPS` = success.absoluteString
-                let videoItem = boundItem.videoItem
-                self.videoItem = videoItem
-                Task {
-                    if let url = try await generateThumbnail() {
-                        boundItem.previewImage = url.absoluteString
-                    }
-                    try jsonWallpaperCoordinator.saveData()
-                }
             case .failure(let failure):
                 print(failure)
                 errorAlertItem = failure
@@ -126,6 +139,17 @@ struct WallpaperVideoPlayer<A: Asset>: View {
         .buttonStyle(.plain)
         .onAppear {
             videoItem = boundItem.videoItem
+        }
+        .onChange(of: boundItem.`url-4K-SDR-240FPS`) { oldValue, newValue in
+            guard oldValue != newValue else { return }
+            let videoItem = boundItem.videoItem
+            self.videoItem = videoItem
+            Task {
+                if let url = try await generateThumbnail() {
+                    boundItem.previewImage = url.absoluteString
+                }
+                try jsonWallpaperCoordinator.saveData()
+            }
         }
     }
 
@@ -182,7 +206,7 @@ private struct AVPlayerControllerRepresented: NSViewRepresentable {
         guard let queuePlayer = nsView.player as? AVQueuePlayer else { return }
         
         // If current item isn’t matching, reset looper
-        if queuePlayer.items().first != playerItem {
+        if (nsView.player?.currentItem?.asset as? AVURLAsset)?.url != (playerItem.asset as? AVURLAsset)?.url {
             let looper = AVPlayerLooper(player: queuePlayer, templateItem: playerItem)
             context.coordinator.looper = looper
             queuePlayer.play()

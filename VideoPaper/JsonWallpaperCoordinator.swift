@@ -26,6 +26,11 @@ final class JsonWallpaperCoordinator {
             categories.filter({ $0.localizedNameKey.lowercased().contains("custom") })
         }
         set {
+            let oldFiltered = categories.filter({ $0.localizedNameKey.lowercased().contains("custom") })
+            for oldFilter in oldFiltered where !newValue.contains(where: { $0.id == oldFilter.id }){
+                categories.removeAll(where: { $0.id == oldFilter.id })
+            }
+            
             for category in newValue {
                 guard let index = categories.firstIndex(where: { $0.id == category.id }) else { continue }
                 categories[index] = category
@@ -51,6 +56,15 @@ final class JsonWallpaperCoordinator {
             }
         }
         set {
+            let oldFiltered = assets.filter { asset in
+                asset.categories.contains { catString in
+                    filteredCategories.contains(where: { $0.id.uuidString == catString })
+                }
+            }
+            for oldFilter in oldFiltered where !newValue.contains(where: { $0.id == oldFilter.id }){
+                assets.removeAll(where: { $0.id == oldFilter.id })
+            }
+            
             for asset in newValue {
                 guard let index = assets.firstIndex(where: { $0.id == asset.id }) else { continue }
                 assets[index] = asset
@@ -109,6 +123,19 @@ final class JsonWallpaperCoordinator {
             try FileManager.default.copyItem(at: previewImageUrl, to: cachePreviewImageURL)
             try FileManager.default.copyItem(at: videoUrl, to: cacheVideoURL)
         }
+    }
+    
+    func deleteAsset(_ asset: JsonAsset) throws {
+        filteredAssets.removeAll(where: { $0.id == asset.id })
+        if let previewImageUrl = URL(string: asset.previewImage) {
+            let cachePreviewImageURL = wallpaperThumbnailFolderURL.appending(path: "\(asset.id.uuidString).\(previewImageUrl.pathExtension)")
+            try? FileManager.default.removeItem(at: cachePreviewImageURL)
+        }
+        if let videoUrl = URL(string: asset.`url-4K-SDR-240FPS`) {
+            let cacheVideoURL = wallpaperVideosFolderURL.appending(path: "\(asset.id.uuidString).\(videoUrl.pathExtension)")
+            try? FileManager.default.removeItem(at: cacheVideoURL)
+        }
+        try saveData()
     }
 }
 

@@ -56,7 +56,23 @@ struct ContentView: View {
             .inspector(isPresented: $isPresentingInspector, content: {
                 Group {
                     if let inspectedAsset {
-                        WallpaperDetailView(boundItem: inspectedAsset)
+                        let newBinding: Binding<JsonAsset?> = Binding {
+                            jsonWallpaperCoordinator.assets.first(where: { $0.id == inspectedAsset.wrappedValue.id })
+                        } set: { newValue in
+                            guard let index = jsonWallpaperCoordinator.assets.firstIndex(where: { $0.id == inspectedAsset.wrappedValue.id }), let newValue else { return }
+                            jsonWallpaperCoordinator.assets[index] = newValue
+                        }
+
+                        if let binding = Binding(newBinding) {
+                            WallpaperDetailView(boundItem: binding) {
+                                self.inspectedAsset = nil
+                                DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(10)) {
+                                    try? jsonWallpaperCoordinator.deleteAsset(inspectedAsset.wrappedValue)
+                                }
+                            }
+                        } else {
+                            Text("Select a Wallpaper")
+                        }
                     } else {
                         Text("Select a Wallpaper")
                     }
