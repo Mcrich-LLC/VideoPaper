@@ -124,6 +124,21 @@ final class JsonWallpaperCoordinator {
     }
     
     func saveData(restartServices: Bool = true) throws {
+        // Update representativeAssetIDs to the first of each colleciton
+        for (n, category) in filteredCategories.enumerated() {
+            guard let asset = assets.first(where: { $0.categories.contains(category.id.uuidString) }) else {
+                continue
+            }
+            filteredCategories[n].representativeAssetID = asset.id.uuidString
+            
+            for (sn, subcategory) in (category.subcategories ?? []).enumerated() {
+                guard let asset = assets.first(where: { $0.subcategories.contains(subcategory.id.uuidString) }) else {
+                    continue
+                }
+                filteredCategories[n].subcategories?[sn].representativeAssetID = asset.id.uuidString
+            }
+        }
+        
         let saveObject = jsonObject
         
         let data = try JSONEncoder().encode(saveObject)
@@ -226,8 +241,8 @@ struct JsonCategory: Codable, Identifiable, Equatable {
     let previewImage: String
     let localizedDescriptionKey: String
     let preferredOrder: Int
-    let subcategories: [JsonCategory]?
-    let representativeAssetID: String
+    var subcategories: [JsonCategory]?
+    var representativeAssetID: String
 }
 
 struct JsonAsset: Codable, Asset {
