@@ -18,25 +18,41 @@ struct ContentView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                LazyVGrid(columns: [.init(.adaptive(minimum: 150, maximum: 150))], alignment: .leading) {
-                    ForEach($jsonWallpaperCoordinator.filteredAssets) { $asset in
-                        if let thumbnailImage = asset.thumbnailImage {
-                            Button {
-                                inspectedAsset = $asset
-                                isPresentingInspector = true
-                            } label: {
-                                Image(nsImage: thumbnailImage)
-                                    .resizable()
-                                    .aspectRatio(1, contentMode: .fill)
+            Group {
+                if jsonWallpaperCoordinator.assets.isEmpty {
+                    ProgressView("Fetching Wallpapers...")
+                } else {
+                    ScrollView {
+                        LazyVGrid(columns: [.init(.adaptive(minimum: 150, maximum: 150))], alignment: .leading) {
+                            ForEach($jsonWallpaperCoordinator.filteredAssets) { $asset in
+                                if let thumbnailImage = asset.thumbnailImage {
+                                    Button {
+                                        inspectedAsset = $asset
+                                        isPresentingInspector = true
+                                    } label: {
+                                        VStack {
+                                            Image(nsImage: thumbnailImage)
+                                                .resizable()
+                                                .aspectRatio(1, contentMode: .fill)
+                                                .frame(width: 150, height: 150)
+                                                .clipShape(RoundedRectangle(cornerRadius: 26))
+                                            Text(asset.localizedNameKey)
+                                        }
+                                    }
+                                    .buttonStyle(.plain)
+                                }
                             }
-                            .frame(width: 150, height: 150)
-                            .clipShape(RoundedRectangle(cornerRadius: 26))
-                            .buttonStyle(.plain)
                         }
+                        .padding()
                     }
+                    .onChange(of: jsonWallpaperCoordinator.assets, {
+                        do {
+                            try jsonWallpaperCoordinator.saveData()
+                        } catch {
+                            print(error)
+                        }
+                    })
                 }
-                .padding()
             }
             .inspector(isPresented: $isPresentingInspector, content: {
                 Group {
@@ -46,7 +62,7 @@ struct ContentView: View {
                         Text("Select a Wallpaper")
                     }
                 }
-                .inspectorColumnWidth(min: 150, ideal: 225, max: 400)
+                .inspectorColumnWidth(min: 200, ideal: 225, max: 400)
             })
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -64,6 +80,7 @@ struct ContentView: View {
                 print(error)
             }
         }
+        .environment(jsonWallpaperCoordinator)
     }
 }
 

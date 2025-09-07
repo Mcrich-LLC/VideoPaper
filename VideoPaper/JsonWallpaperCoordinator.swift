@@ -12,7 +12,7 @@ import AVFoundation
 
 @Observable
 final class JsonWallpaperCoordinator {
-    private var jsonObject: JsonObject?
+    private(set) var jsonObject: JsonObject?
     var categories: [JsonCategory] {
         get {
             jsonObject?.categories ?? []
@@ -61,13 +61,23 @@ final class JsonWallpaperCoordinator {
     nonisolated private let wallpaperFolderURL: URL = {
         let homeURL = FileManager.default.homeDirectoryForCurrentUser
         let userLibraryURL = homeURL.appending(path: "Library")
-        let jsonURL = userLibraryURL.appending(path: "Application Support/com.apple.wallpaper/aerials/manifest")
+        let jsonURL = userLibraryURL.appending(path: "Application Support/com.apple.wallpaper/aerials")
         return jsonURL
     }()
     
     @ObservationIgnored
     nonisolated var jsonURL: URL {
-        wallpaperFolderURL.appending(path: "entries.json")
+        wallpaperFolderURL.appending(path: "manifest/entries.json")
+    }
+    
+    @ObservationIgnored
+    nonisolated var wallpaperThumbnailFolderURL: URL {
+        wallpaperFolderURL.appending(path: "thumbnails")
+    }
+    
+    @ObservationIgnored
+    nonisolated var wallpaperVideosFolderURL: URL {
+        wallpaperFolderURL.appending(path: "videos")
     }
     
     func fetchData() throws {
@@ -82,10 +92,27 @@ final class JsonWallpaperCoordinator {
         
         let data = try JSONEncoder().encode(saveObject)
         try data.write(to: jsonURL)
+        
+        for asset in filteredAssets {
+            guard let previewImageUrl = URL(string: asset.previewImage),
+                  let videoUrl = URL(string: asset.`url-4K-SDR-240FPS`)
+            else {
+                continue
+            }
+            
+            let cachePreviewImageURL = wallpaperThumbnailFolderURL.appending(path: "\(asset.id.uuidString).\(previewImageUrl.pathExtension)")
+            let cacheVideoURL = wallpaperVideosFolderURL.appending(path: "\(asset.id.uuidString).\(videoUrl.pathExtension)")
+            
+            try? FileManager.default.removeItem(at: cachePreviewImageURL)
+            try? FileManager.default.removeItem(at: cacheVideoURL)
+            
+            try FileManager.default.copyItem(at: previewImageUrl, to: cachePreviewImageURL)
+            try FileManager.default.copyItem(at: videoUrl, to: cacheVideoURL)
+        }
     }
 }
 
-private struct JsonObject: Codable {
+struct JsonObject: Codable {
     let version: Int
     let localizationVersion: String
     let initialAssetCount: Int
@@ -109,8 +136,8 @@ struct JsonAsset: Codable, Asset {
     let shotID: String
     let localizedNameKey: String
     let accessibilityLabel: String
-    let previewImage: String
-    let `previewImage-900x580`: String
+    var previewImage: String
+    var `previewImage-900x580`: String
     let pointsOfInterest: [String : String]
     let includeInShuffle: Bool
     let `url-4K-SDR-240FPS`: String
@@ -138,14 +165,14 @@ struct JsonAsset: Codable, Asset {
     }
 }
 
-protocol Asset: Identifiable {
+protocol Asset: Identifiable, Equatable {
     var id: UUID { get }
     var showInTopLevel: Bool { get }
     var shotID: String { get }
     var localizedNameKey: String { get }
     var accessibilityLabel: String { get }
-    var previewImage: String { get }
-    var `previewImage-900x580`: String { get }
+    var previewImage: String { get set }
+    var `previewImage-900x580`: String { get set }
     var pointsOfInterest: [String : String] { get }
     var includeInShuffle: Bool { get }
     var `url-4K-SDR-240FPS`: String { get }
