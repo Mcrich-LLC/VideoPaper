@@ -26,7 +26,7 @@ struct WallpaperDetailView<A: Asset>: View {
     
     var body: some View {
         VStack {
-            WallpaperVideoPlayer(boundItem: $boundItem)
+            WallpaperVideoPlayer(boundItem: $editableItem)
             GroupBox {
                 VStack(alignment: .leading) {
                     TextField("Name", text: $editableItem.localizedNameKey)
@@ -39,7 +39,7 @@ struct WallpaperDetailView<A: Asset>: View {
                     Divider()
                     
                     HStack {
-                        if let image = boundItem.thumbnailImage {
+                        if let image = editableItem.thumbnailImage {
                             Image(nsImage: image)
                                 .resizable()
                                 .aspectRatio(1, contentMode: .fill)
@@ -47,13 +47,13 @@ struct WallpaperDetailView<A: Asset>: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 8))
                         }
                         
-                        Button("\(boundItem.thumbnailImage == nil ? "Set" : "Change") Image") {
+                        Button("\(editableItem.thumbnailImage == nil ? "Set" : "Change") Image") {
                             isShowingThumbnailFileImporter.toggle()
                         }
                         .fileImporter(isPresented: $isShowingThumbnailFileImporter, allowedContentTypes: [.image, .png, .jpeg, .jpeg]) { result in
                             switch result {
                             case .success(let success):
-                                boundItem.previewImage = success.absoluteString
+                                editableItem.previewImage = success.absoluteString
                             case .failure(let failure):
                                 print(failure)
                                 errorAlertItem = failure
@@ -72,7 +72,27 @@ struct WallpaperDetailView<A: Asset>: View {
                         .foregroundStyle(.white)
                         .background(Color.accentColor, in: ConcentricRectangle())
                 } else {
-                    HStack {
+                    VStack {
+                        HStack {
+                            Button(role: .destructive) {
+                                editableItem = boundItem
+                            } label: {
+                                Label("Discard", systemImage: "eraser")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .disabled(boundItem == editableItem)
+                            
+                            Button {
+                                saveProperties()
+                                isShowingSavedInlineMessage = true
+                            } label: {
+                                Label("Save", systemImage: "checkmark")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .disabled(boundItem.`url-4K-SDR-240FPS`.isEmpty || boundItem.previewImage.isEmpty || boundItem == editableItem)
+                            .tint(.accentColor)
+                        }
+                        Divider()
                         if let onDelete {
                             Button(role: .destructive) {
                                 onDelete()
@@ -82,16 +102,6 @@ struct WallpaperDetailView<A: Asset>: View {
                             }
                             .tint(.red)
                         }
-                        
-                        Button {
-                            saveProperties()
-                            isShowingSavedInlineMessage = true
-                        } label: {
-                            Label("Save", systemImage: "checkmark")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .disabled(boundItem.`url-4K-SDR-240FPS`.isEmpty || boundItem.previewImage.isEmpty || boundItem == editableItem)
-                        .tint(.accentColor)
                     }
                 }
             }
@@ -138,6 +148,9 @@ struct WallpaperDetailView<A: Asset>: View {
         boundItem.includeInShuffle = editableItem.includeInShuffle
         boundItem.pointsOfInterest = editableItem.pointsOfInterest
         boundItem.showInTopLevel = editableItem.showInTopLevel
+        boundItem.`url-4K-SDR-240FPS` = editableItem.`url-4K-SDR-240FPS`
+        boundItem.previewImage = editableItem.previewImage
+        boundItem.`previewImage-900x580` = editableItem.`previewImage-900x580`
         try? jsonWallpaperCoordinator.saveData()
     }
 }
