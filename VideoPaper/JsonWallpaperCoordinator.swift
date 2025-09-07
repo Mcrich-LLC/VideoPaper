@@ -129,6 +129,8 @@ final class JsonWallpaperCoordinator {
             try FileManager.default.copyItem(at: previewImageUrl, to: cachePreviewImageURL)
             try FileManager.default.copyItem(at: videoUrl, to: cacheVideoURL)
         }
+        
+        try restartWallpaperServices()
     }
     
     func deleteAsset(for id: UUID) throws {
@@ -161,11 +163,33 @@ final class JsonWallpaperCoordinator {
         
         return asset.id
     }
+    
+    private func restartWallpaperServices() throws {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/killall")
+        process.arguments = ["Wallpaper", "WallpaperAgent", "WallpaperAerialsExtension", "WallpaperImageExtension", "WallpaperLegacyExtension"]
+        
+        do {
+            try process.run()
+            process.waitUntilExit()
+        } catch {
+            print("Error running killall: \(error)")
+            throw error
+        }
+        
+        if process.terminationStatus == 0 {
+            print("Successfully terminated Wallpaper Services")
+        } else {
+            print("Failed to terminate Wallpaper Services with status \(process.terminationStatus)")
+            throw JsonWallpaperError.failedToRestartWallpaperServices(process.terminationStatus)
+        }
+    }
 }
 
 enum JsonWallpaperError: Error {
     case invalidStructure
     case assetNotFound
+    case failedToRestartWallpaperServices(Int32)
 }
 
 struct JsonObject: Codable {
