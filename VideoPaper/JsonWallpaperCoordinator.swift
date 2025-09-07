@@ -106,8 +106,19 @@ final class JsonWallpaperCoordinator {
         
         self.jsonObject = object
         
-        if filteredAssets.contains(where: { $0.`url-4K-SDR-240FPS`.isEmpty || $0.previewImage.isEmpty }) {
-            filteredAssets.removeAll(where: { $0.`url-4K-SDR-240FPS`.isEmpty || $0.previewImage.isEmpty })
+        // Pre-configure for insertion
+        let preAdjustFilteredCategories = filteredCategories
+        let preAdjustFilteredAssets = filteredAssets
+        
+        if filteredCategories.isEmpty, let lastCategory = categories.last, let lastSubCategory = lastCategory.subcategories?.last {
+            filteredCategories.append(.init(id: UUID(), localizedNameKey: "Custom Videos", previewImage: "", localizedDescriptionKey: "Custom Videos", preferredOrder: 0, subcategories: [
+                .init(id: UUID(), localizedNameKey: "Custom Videos", previewImage: "", localizedDescriptionKey: "Custom Videos", preferredOrder: 0, subcategories: nil, representativeAssetID: lastSubCategory.representativeAssetID)
+            ], representativeAssetID: lastCategory.representativeAssetID))
+        }
+
+        filteredAssets.removeAll(where: { $0.`url-4K-SDR-240FPS`.isEmpty || $0.previewImage.isEmpty })
+        
+        if preAdjustFilteredAssets != filteredAssets || preAdjustFilteredCategories != filteredCategories {
             try saveData()
         }
     }
@@ -209,7 +220,7 @@ struct JsonObject: Codable {
     var assets: [JsonAsset]
 }
 
-struct JsonCategory: Codable, Identifiable {
+struct JsonCategory: Codable, Identifiable, Equatable {
     let id: UUID
     let localizedNameKey: String
     let previewImage: String
