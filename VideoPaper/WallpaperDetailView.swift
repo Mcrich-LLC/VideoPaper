@@ -269,11 +269,13 @@ private struct AVPlayerControllerRepresented: NSViewRepresentable {
     }
     
     func updateNSView(_ nsView: AVPlayerView, context: Context) {
-        guard let queuePlayer = nsView.player as? AVQueuePlayer else { return }
-        
         // If current item isn’t matching, reset looper
         if (nsView.player?.currentItem?.asset as? AVURLAsset)?.url != (playerItem.asset as? AVURLAsset)?.url {
-            nsView.player?.replaceCurrentItem(with: playerItem)
+            (nsView.player as? AVQueuePlayer)?.removeAllItems()
+            
+            let queuePlayer = (nsView.player as? AVQueuePlayer) ?? AVQueuePlayer(playerItem: playerItem)
+            nsView.player = queuePlayer
+            
             let looper = AVPlayerLooper(player: queuePlayer, templateItem: playerItem)
             context.coordinator.looper = looper
             queuePlayer.play()
