@@ -193,7 +193,7 @@ final class JsonWallpaperCoordinator {
         else {
             throw JsonWallpaperError.invalidStructure
         }
-        let asset = JsonAsset(id: UUID(), showInTopLevel: true, shotID: UUID().uuidString, localizedNameKey: "Custom Wallpaper", accessibilityLabel: "Custom Wallpaper", previewImage: "", `previewImage-900x580`: "", pointsOfInterest: [:], includeInShuffle: false, `url-4K-SDR-240FPS`: "", subcategories: [subcategories.id.uuidString], preferredOrder: filteredAssets.count+1, categories: [category.id.uuidString])
+        let asset = JsonAsset(id: UUID(), showInTopLevel: true, shotID: UUID().uuidString, localizedNameKey: "", accessibilityLabel: "", previewImage: "", `previewImage-900x580`: "", pointsOfInterest: [:], includeInShuffle: false, `url-4K-SDR-240FPS`: "", subcategories: [subcategories.id.uuidString], preferredOrder: filteredAssets.count+1, categories: [category.id.uuidString])
         filteredAssets.append(asset)
         
         return asset.id

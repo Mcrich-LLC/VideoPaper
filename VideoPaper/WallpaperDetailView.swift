@@ -26,119 +26,124 @@ struct WallpaperDetailView<A: Asset>: View {
     }
     
     var body: some View {
-        VStack {
-            WallpaperVideoPlayer(boundItem: $editableItem)
-            GroupBox {
-                VStack(alignment: .leading) {
-                    TextField("Name", text: $editableItem.localizedNameKey)
-                        .padding(.leading, 1)
-                        .onChange(of: editableItem.localizedNameKey) { _, newValue in
-                            editableItem.accessibilityLabel = newValue
-                        }
-                        .textFieldStyle(.plain)
-                    
-                    Divider()
-                    
-                    HStack {
-                        if let image = editableItem.thumbnailImage {
-                            Image(nsImage: image)
-                                .resizable()
-                                .aspectRatio(1, contentMode: .fill)
-                                .frame(width: 50, height: 50)
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                        }
-                        
-                        Button("\(editableItem.thumbnailImage == nil ? "Set" : "Change") Image") {
-                            isShowingThumbnailFileImporter.toggle()
-                        }
-                        .fileImporter(isPresented: $isShowingThumbnailFileImporter, allowedContentTypes: [.image, .png, .jpeg, .jpeg]) { result in
-                            switch result {
-                            case .success(let success):
-                                editableItem.previewImage = success.absoluteString
-                            case .failure(let failure):
-                                print(failure)
-                                errorAlertItem = failure
+        ScrollView {
+            VStack {
+                WallpaperVideoPlayer(boundItem: $editableItem)
+                GroupBox {
+                    VStack(alignment: .leading) {
+                        TextField("Name", text: $editableItem.localizedNameKey)
+                            .padding(.leading, 1)
+                            .onChange(of: editableItem.localizedNameKey) { _, newValue in
+                                editableItem.accessibilityLabel = newValue
                             }
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity)
-            }
-            
-            GroupBox {
-                if isShowingSavedInlineMessage {
-                    Label("Saved", systemImage: "checkmark")
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 4)
-                        .foregroundStyle(.white)
-                        .background(Color.accentColor, in: ConcentricRectangle())
-                } else {
-                    VStack {
-                        HStack {
-                            Button(role: .destructive) {
-                                editableItem = boundItem
-                            } label: {
-                                Label("Discard", systemImage: "eraser")
-                                    .frame(maxWidth: .infinity)
-                            }
-                            .disabled(boundItem == editableItem)
-                            
-                            Button {
-                                saveProperties()
-                                isShowingSavedInlineMessage = true
-                            } label: {
-                                Label("Save", systemImage: "checkmark")
-                                    .frame(maxWidth: .infinity)
-                            }
-                            .disabled(editableItem.videoURL.isEmpty || editableItem.previewImage.isEmpty || boundItem == editableItem)
-                            .tint(.accentColor)
-                        }
+                            .textFieldStyle(.plain)
                         Divider()
-                        if let onDelete {
-                            Button(role: .destructive) {
-                                onDelete()
-                            } label: {
-                                Label("Delete", systemImage: "trash")
-                                    .frame(maxWidth: .infinity)
+                        Toggle("Pinned", isOn: $editableItem.showInTopLevel)
+                        Toggle("Include in Shuffle", isOn: $editableItem.includeInShuffle)
+                        
+                        Divider()
+                        
+                        HStack {
+                            if let image = editableItem.thumbnailImage {
+                                Image(nsImage: image)
+                                    .resizable()
+                                    .aspectRatio(1, contentMode: .fill)
+                                    .frame(width: 50, height: 50)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
                             }
-                            .tint(.red)
+                            
+                            Button("\(editableItem.thumbnailImage == nil ? "Set" : "Change") Image") {
+                                isShowingThumbnailFileImporter.toggle()
+                            }
+                            .fileImporter(isPresented: $isShowingThumbnailFileImporter, allowedContentTypes: [.image, .png, .jpeg, .jpeg]) { result in
+                                switch result {
+                                case .success(let success):
+                                    editableItem.previewImage = success.absoluteString
+                                case .failure(let failure):
+                                    print(failure)
+                                    errorAlertItem = failure
+                                }
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                
+                GroupBox {
+                    if isShowingSavedInlineMessage {
+                        Label("Saved", systemImage: "checkmark")
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 4)
+                            .foregroundStyle(.white)
+                            .background(Color.accentColor, in: ConcentricRectangle())
+                    } else {
+                        VStack {
+                            HStack {
+                                Button(role: .destructive) {
+                                    editableItem = boundItem
+                                } label: {
+                                    Label("Discard", systemImage: "eraser")
+                                        .frame(maxWidth: .infinity)
+                                }
+                                .disabled(boundItem == editableItem)
+                                
+                                Button {
+                                    saveProperties()
+                                    isShowingSavedInlineMessage = true
+                                } label: {
+                                    Label("Save", systemImage: "checkmark")
+                                        .frame(maxWidth: .infinity)
+                                }
+                                .disabled(editableItem.videoURL.isEmpty || editableItem.previewImage.isEmpty || boundItem == editableItem)
+                                .tint(.accentColor)
+                            }
+                            Divider()
+                            if let onDelete {
+                                Button(role: .destructive) {
+                                    onDelete()
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                        .frame(maxWidth: .infinity)
+                                }
+                                .tint(.red)
+                            }
                         }
                     }
                 }
+                Spacer()
             }
-            Spacer()
-        }
-        .padding(.horizontal)
-        .alert(for: $errorAlertItem)
-        .onChange(of: boundItem, { oldValue, newValue in
-            if oldValue.id != newValue.id {
-                if oldValue.videoURL.isEmpty || oldValue.previewImage.isEmpty {
-                    if let oldValue = oldValue as? JsonAsset {
-                        try? jsonWallpaperCoordinator.deleteAsset(oldValue)
+            .padding(.horizontal)
+            .alert(for: $errorAlertItem)
+            .onChange(of: boundItem, { oldValue, newValue in
+                if oldValue.id != newValue.id {
+                    if oldValue.videoURL.isEmpty || oldValue.previewImage.isEmpty {
+                        if let oldValue = oldValue as? JsonAsset {
+                            try? jsonWallpaperCoordinator.deleteAsset(oldValue)
+                        }
                     }
                 }
-            }
-            
-            if editableItem != newValue {
-                editableItem = newValue
-            }
-        })
-        .onDisappear(perform: {
-            if boundItem.videoURL.isEmpty || boundItem.previewImage.isEmpty {
-                if let boundItem = boundItem as? JsonAsset {
-                    try? jsonWallpaperCoordinator.deleteAsset(boundItem)
+                
+                if editableItem != newValue {
+                    editableItem = newValue
+                }
+            })
+            .onDisappear(perform: {
+                if boundItem.videoURL.isEmpty || boundItem.previewImage.isEmpty {
+                    if let boundItem = boundItem as? JsonAsset {
+                        try? jsonWallpaperCoordinator.deleteAsset(boundItem)
+                    }
+                }
+            })
+            .onChange(of: isShowingSavedInlineMessage) { _, newValue in
+                guard newValue else {
+                    return
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(2)) {
+                    isShowingSavedInlineMessage = false
                 }
             }
-        })
-        .onChange(of: isShowingSavedInlineMessage) { _, newValue in
-            guard newValue else {
-                return
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(2)) {
-                isShowingSavedInlineMessage = false
-            }
+            .animation(.default, value: isShowingSavedInlineMessage)
         }
-        .animation(.default, value: isShowingSavedInlineMessage)
     }
     
     func saveProperties() {
