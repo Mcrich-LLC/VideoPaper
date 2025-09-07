@@ -15,8 +15,9 @@ struct WallpaperDetailView<A: Asset>: View {
     @State private var errorAlertItem: Error?
     
     @Environment(JsonWallpaperCoordinator.self) var jsonWallpaperCoordinator
-    @State var isShowingSavedInlineMessage = false
-    @State var editableItem: A
+    @State private var isShowingSavedInlineMessage = false
+    @State private var editableItem: A
+    @State private var forceImageUpdate = false
     
     init(boundItem: Binding<A>, onDelete: (() -> Void)?) {
         self._boundItem = boundItem
@@ -110,11 +111,16 @@ struct WallpaperDetailView<A: Asset>: View {
         .padding(.horizontal)
         .alert(for: $errorAlertItem)
         .onChange(of: boundItem, { oldValue, newValue in
-            guard oldValue.id != newValue.id else { return }
-            if oldValue.`url-4K-SDR-240FPS`.isEmpty || oldValue.previewImage.isEmpty {
-                if let oldValue = oldValue as? JsonAsset {
-                    try? jsonWallpaperCoordinator.deleteAsset(oldValue)
+            if oldValue.id != newValue.id {
+                if oldValue.`url-4K-SDR-240FPS`.isEmpty || oldValue.previewImage.isEmpty {
+                    if let oldValue = oldValue as? JsonAsset {
+                        try? jsonWallpaperCoordinator.deleteAsset(oldValue)
+                    }
                 }
+            }
+            
+            if editableItem != newValue {
+                editableItem = newValue
             }
         })
         .onDisappear(perform: {
@@ -132,12 +138,6 @@ struct WallpaperDetailView<A: Asset>: View {
                 isShowingSavedInlineMessage = false
             }
         }
-        .onChange(of: boundItem, { _, newValue in
-            guard editableItem != newValue else {
-                return
-            }
-            editableItem = newValue
-        })
         .animation(.default, value: isShowingSavedInlineMessage)
     }
     
@@ -216,7 +216,10 @@ struct WallpaperVideoPlayer<A: Asset>: View {
         }
         .alert(for: $errorAlertItem)
         .buttonStyle(.plain)
-        .onChange(of: boundItem.id, initial: true) {
+        .onChange(of: boundItem.`url-4K-SDR-240FPS`, initial: true) { oldValue, newValue in
+            guard oldValue != newValue || videoItem == nil else {
+                return
+            }
             videoItem = boundItem.videoItem
         }
     }
@@ -228,7 +231,6 @@ struct WallpaperVideoPlayer<A: Asset>: View {
             if let url = try await generateThumbnail() {
                 boundItem.previewImage = url.absoluteString
             }
-            try jsonWallpaperCoordinator.saveData()
         }
     }
 
@@ -251,7 +253,7 @@ struct WallpaperVideoPlayer<A: Asset>: View {
         let appDir = URL.applicationSupportDirectory
         
         // Save thumbnail
-        let fileURL = appDir.appendingPathComponent("\(boundItem.id.uuidString).png")
+        let fileURL = appDir.appendingPathComponent("\(UUID().uuidString).png")
         try pngData.write(to: fileURL)
         
         return fileURL
@@ -287,10 +289,6 @@ private struct AVPlayerControllerRepresented: NSViewRepresentable {
         // If current item isn’t matching, reset looper
         if (nsView.player?.currentItem?.asset as? AVURLAsset)?.url != (playerItem.asset as? AVURLAsset)?.url {
             queuePlayer.removeAllItems()
-            nsView.player = nil
-            
-            let queuePlayer = AVQueuePlayer()
-            nsView.player = queuePlayer
             
             let looper = AVPlayerLooper(player: queuePlayer, templateItem: playerItem)
             context.coordinator.looper = looper
