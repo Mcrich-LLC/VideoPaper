@@ -172,6 +172,7 @@ struct WallpaperVideoPlayer<A: Asset>: View {
             switch result {
             case .success(let success):
                 boundItem.`url-4K-SDR-240FPS` = success.absoluteString
+                updateVideo()
             case .failure(let failure):
                 print(failure)
                 errorAlertItem = failure
@@ -179,19 +180,19 @@ struct WallpaperVideoPlayer<A: Asset>: View {
         }
         .alert(for: $errorAlertItem)
         .buttonStyle(.plain)
-        .onAppear {
+        .onChange(of: boundItem.id, initial: true) {
             videoItem = boundItem.videoItem
         }
-        .onChange(of: boundItem.`url-4K-SDR-240FPS`) { oldValue, newValue in
-            guard oldValue != newValue else { return }
-            let videoItem = boundItem.videoItem
-            self.videoItem = videoItem
-            Task {
-                if let url = try await generateThumbnail() {
-                    boundItem.previewImage = url.absoluteString
-                }
-                try jsonWallpaperCoordinator.saveData()
+    }
+    
+    func updateVideo() {
+        let videoItem = boundItem.videoItem
+        self.videoItem = videoItem
+        Task {
+            if let url = try await generateThumbnail() {
+                boundItem.previewImage = url.absoluteString
             }
+            try jsonWallpaperCoordinator.saveData()
         }
     }
 

@@ -107,7 +107,7 @@ final class JsonWallpaperCoordinator {
         self.jsonObject = object
     }
     
-    func saveData() throws {
+    func saveData(restartServices: Bool = true) throws {
         let saveObject = jsonObject
         
         let data = try JSONEncoder().encode(saveObject)
@@ -130,7 +130,9 @@ final class JsonWallpaperCoordinator {
             try FileManager.default.copyItem(at: videoUrl, to: cacheVideoURL)
         }
         
-        try restartWallpaperServices()
+        if restartServices {
+            try restartWallpaperServices()
+        }
     }
     
     func deleteAsset(for id: UUID) throws {
@@ -149,7 +151,9 @@ final class JsonWallpaperCoordinator {
             let cacheVideoURL = wallpaperVideosFolderURL.appending(path: "\(asset.id.uuidString).\(videoUrl.pathExtension)")
             try? FileManager.default.removeItem(at: cacheVideoURL)
         }
-        try saveData()
+        
+        let shouldRestartServices = !asset.`url-4K-SDR-240FPS`.isEmpty || !asset.previewImage.isEmpty
+        try saveData(restartServices: shouldRestartServices)
     }
     
     func createBlankAsset() throws -> UUID {
