@@ -178,9 +178,7 @@ struct WallpaperVideoPlayer<A: Asset>: View {
                         .aspectRatio(1, contentMode: .fit)
                         .disabled(true)
                         .overlay(content: {
-                            if isHovering {
-                                Color.black.opacity(0.01) // Fix selectable area bug
-                            }
+                            Color.black.opacity(0.01) // Fix selectable area bug
                         })
                         .overlay(alignment: .bottom, content: {
                             if isHovering {
