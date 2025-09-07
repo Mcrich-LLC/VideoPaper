@@ -183,8 +183,8 @@ struct JsonAsset: Codable, Asset {
     let id: UUID
     let showInTopLevel: Bool
     let shotID: String
-    let localizedNameKey: String
-    let accessibilityLabel: String
+    var localizedNameKey: String
+    var accessibilityLabel: String
     var previewImage: String
     var `previewImage-900x580`: String
     let pointsOfInterest: [String : String]
@@ -216,8 +216,8 @@ protocol Asset: Identifiable, Equatable {
     var id: UUID { get }
     var showInTopLevel: Bool { get }
     var shotID: String { get }
-    var localizedNameKey: String { get }
-    var accessibilityLabel: String { get }
+    var localizedNameKey: String { get set }
+    var accessibilityLabel: String { get set }
     var previewImage: String { get set }
     var `previewImage-900x580`: String { get set }
     var pointsOfInterest: [String : String] { get }

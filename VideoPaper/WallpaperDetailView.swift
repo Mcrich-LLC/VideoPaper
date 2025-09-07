@@ -22,7 +22,12 @@ struct WallpaperDetailView<A: Asset>: View {
             WallpaperVideoPlayer(boundItem: $boundItem)
             GroupBox {
                 VStack(alignment: .leading) {
-                    Text(boundItem.localizedNameKey)
+                    TextField("Name", text: $boundItem.localizedNameKey)
+                        .padding(.leading, 1)
+                        .onChange(of: boundItem.localizedNameKey) { _, newValue in
+                            boundItem.accessibilityLabel = newValue
+                        }
+                        .textFieldStyle(.plain)
                     
                     Divider()
                     
@@ -78,6 +83,7 @@ struct WallpaperDetailView<A: Asset>: View {
                             Label("Save", systemImage: "checkmark")
                                 .frame(maxWidth: .infinity)
                         }
+                        .disabled(boundItem.`url-4K-SDR-240FPS`.isEmpty || boundItem.previewImage.isEmpty)
                         .tint(.accentColor)
                     }
                 }
@@ -86,6 +92,20 @@ struct WallpaperDetailView<A: Asset>: View {
         }
         .padding(.horizontal)
         .alert(for: $errorAlertItem)
+        .onChange(of: boundItem, { oldValue, newValue in
+            if oldValue.`url-4K-SDR-240FPS`.isEmpty || oldValue.previewImage.isEmpty {
+                if let oldValue = oldValue as? JsonAsset {
+                    try? jsonWallpaperCoordinator.deleteAsset(oldValue)
+                }
+            }
+        })
+        .onDisappear(perform: {
+            if boundItem.`url-4K-SDR-240FPS`.isEmpty || boundItem.previewImage.isEmpty {
+                if let boundItem = boundItem as? JsonAsset {
+                    try? jsonWallpaperCoordinator.deleteAsset(boundItem)
+                }
+            }
+        })
         .onChange(of: isShowingSavedInlineMessage) { _, newValue in
             guard newValue else {
                 return
