@@ -7,7 +7,6 @@
 
 import SwiftUI
 import SwiftData
-import WrappingHStack
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext

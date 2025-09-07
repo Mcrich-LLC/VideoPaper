@@ -15,26 +15,9 @@ struct WallpaperDetailView<A: Asset>: View {
     
     @Environment(JsonWallpaperCoordinator.self) var jsonWallpaperCoordinator
     
-    var isShowingErrorAlert: Binding<Bool> {
-        Binding {
-            errorAlertItem != nil
-        } set: { newValue in
-            if !newValue {
-                errorAlertItem = nil
-            }
-        }
-
-    }
-    
     var body: some View {
         VStack {
-            if let videoItem = boundItem.videoItem {
-                AVPlayerControllerRepresented(player: videoItem)
-                    .aspectRatio(1, contentMode: .fit)
-                    .disabled(true)
-                    .clipShape(RoundedRectangle(cornerRadius: 26))
-            }
-             
+            WallpaperVideoPlayer(boundItem: $boundItem)
             GroupBox {
                 VStack(alignment: .leading) {
                     Text(boundItem.localizedNameKey)
@@ -69,26 +52,116 @@ struct WallpaperDetailView<A: Asset>: View {
             Spacer()
         }
         .padding(.horizontal)
-        .alert("Uh Oh", isPresented: isShowingErrorAlert, presenting: errorAlertItem) { _ in
-            Button("Ok") {}
-        } message: { error in
-            Text(error.localizedDescription)
+        .alert(for: $errorAlertItem)
+    }
+}
+
+struct WallpaperVideoPlayer<A: Asset>: View {
+    @Binding var boundItem: A
+    @State private var isHovering = false
+    @State private var isShowingVideoImporter = false
+    @State private var errorAlertItem: Error?
+    
+    @State var videoItem: AVPlayerItem?
+    
+    var body: some View {
+        Group {
+            if let videoItem {
+                Button {
+                    isShowingVideoImporter.toggle()
+                } label: {
+                    AVPlayerControllerRepresented(playerItem: videoItem)
+                        .aspectRatio(1, contentMode: .fit)
+                        .disabled(true)
+                        .overlay(content: {
+                            if isHovering {
+                                Color.black.opacity(0.01) // Fix selectable area bug
+                            }
+                        })
+                        .overlay(alignment: .bottom, content: {
+                            if isHovering {
+                                Text("Edit")
+                                    .frame(maxWidth: .infinity)
+                                    .foregroundStyle(.white)
+                                    .frame(height: 50)
+                                    .background(LinearGradient(colors: [.primary, .clear], startPoint: .bottom, endPoint: .top))
+                            }
+                        })
+                        .clipShape(RoundedRectangle(cornerRadius: 26))
+                        .onHover { isHovering in
+                            self.isHovering = isHovering
+                        }
+                }
+            } else {
+                Button {
+                    isShowingVideoImporter.toggle()
+                } label: {
+                    RoundedRectangle(cornerRadius: 26)
+                        .aspectRatio(1, contentMode: .fit)
+                        .overlay {
+                            Text("Upload Video")
+                        }
+                }
+            }
+        }
+        .fileImporter(isPresented: $isShowingVideoImporter, allowedContentTypes: [.quickTimeMovie]) { result in
+            switch result {
+            case .success(let success):
+                boundItem.`url-4K-SDR-240FPS` = success.absoluteString
+                videoItem = boundItem.videoItem
+            case .failure(let failure):
+                print(failure)
+                errorAlertItem = failure
+            }
+        }
+        .alert(for: $errorAlertItem)
+        .buttonStyle(.plain)
+        .onAppear {
+            videoItem = boundItem.videoItem
         }
     }
 }
 
-private struct AVPlayerControllerRepresented : NSViewRepresentable {
-    var player : AVPlayer
+private struct AVPlayerControllerRepresented: NSViewRepresentable {
+    let playerItem: AVPlayerItem
     
     func makeNSView(context: Context) -> AVPlayerView {
         let view = AVPlayerView()
         view.controlsStyle = .none
         view.videoGravity = .resizeAspectFill
-        view.player = player
+        
+        // Use AVQueuePlayer for looping
+        let queuePlayer = AVQueuePlayer()
+        view.player = queuePlayer
+        
+        // Attach looper
+        let looper = AVPlayerLooper(player: queuePlayer, templateItem: playerItem)
+        context.coordinator.looper = looper // retain looper
+        
+        queuePlayer.volume = 0
+        queuePlayer.isMuted = false
+        queuePlayer.play()
+        
         return view
     }
     
     func updateNSView(_ nsView: AVPlayerView, context: Context) {
+        guard let queuePlayer = nsView.player as? AVQueuePlayer else { return }
         
+        // If current item isn’t matching, reset looper
+        if queuePlayer.items().first != playerItem {
+            let looper = AVPlayerLooper(player: queuePlayer, templateItem: playerItem)
+            context.coordinator.looper = looper
+            queuePlayer.play()
+        }
+    }
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+    
+    class Coordinator {
+        var looper: AVPlayerLooper?
     }
 }
+

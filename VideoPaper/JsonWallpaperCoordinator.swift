@@ -140,7 +140,7 @@ struct JsonAsset: Codable, Asset {
     var `previewImage-900x580`: String
     let pointsOfInterest: [String : String]
     let includeInShuffle: Bool
-    let `url-4K-SDR-240FPS`: String
+    var `url-4K-SDR-240FPS`: String
     let subcategories: [String]
     let preferredOrder: Int
     let categories: [String]
@@ -153,14 +153,12 @@ struct JsonAsset: Codable, Asset {
         return NSImage(data: data)
     }
     
-    var videoItem: AVPlayer? {
+    var videoItem: AVPlayerItem? {
         guard let videoUrl = URL(string: `url-4K-SDR-240FPS`) else {
             return nil
         }
         
-        let player = AVPlayer(url: videoUrl)
-        player.play()
-        player.volume = 0
+        let player = AVPlayerItem(url: videoUrl)
         return player
     }
 }
@@ -175,10 +173,10 @@ protocol Asset: Identifiable, Equatable {
     var `previewImage-900x580`: String { get set }
     var pointsOfInterest: [String : String] { get }
     var includeInShuffle: Bool { get }
-    var `url-4K-SDR-240FPS`: String { get }
+    var `url-4K-SDR-240FPS`: String { get set }
     var subcategories: [String] { get }
     var preferredOrder: Int { get }
     var categories: [String] { get }
     var thumbnailImage: NSImage? { get }
-    var videoItem: AVPlayer? { get }
+    var videoItem: AVPlayerItem? { get }
 }
