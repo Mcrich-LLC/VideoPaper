@@ -32,7 +32,10 @@ final class JsonWallpaperCoordinator {
             }
             
             for category in newValue {
-                guard let index = categories.firstIndex(where: { $0.id == category.id }) else { continue }
+                guard let index = categories.firstIndex(where: { $0.id == category.id }) else {
+                    categories.append(category)
+                    continue
+                }
                 categories[index] = category
             }
         }
@@ -66,7 +69,10 @@ final class JsonWallpaperCoordinator {
             }
             
             for asset in newValue {
-                guard let index = assets.firstIndex(where: { $0.id == asset.id }) else { continue }
+                guard let index = assets.firstIndex(where: { $0.id == asset.id }) else {
+                    assets.append(asset)
+                    continue
+                }
                 assets[index] = asset
             }
         }
@@ -137,6 +143,22 @@ final class JsonWallpaperCoordinator {
         }
         try saveData()
     }
+    
+    func createBlankAsset() throws -> UUID {
+        guard let category = filteredCategories.last,
+              let subcategories = category.subcategories?.last
+        else {
+            throw JsonWallpaperError.invalidStructure
+        }
+        let asset = JsonAsset(id: UUID(), showInTopLevel: true, shotID: UUID().uuidString, localizedNameKey: "Custom Wallpaper", accessibilityLabel: "Custom Wallpaper", previewImage: "", `previewImage-900x580`: "", pointsOfInterest: [:], includeInShuffle: false, `url-4K-SDR-240FPS`: "", subcategories: [subcategories.id.uuidString], preferredOrder: filteredAssets.count+1, categories: [category.id.uuidString])
+        filteredAssets.append(asset)
+        
+        return asset.id
+    }
+}
+
+enum JsonWallpaperError: Error {
+    case invalidStructure
 }
 
 struct JsonObject: Codable {

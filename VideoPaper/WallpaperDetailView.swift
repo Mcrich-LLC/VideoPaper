@@ -10,7 +10,7 @@ import AVKit
 
 struct WallpaperDetailView<A: Asset>: View {
     @Binding var boundItem: A
-    let onDelete: () -> Void
+    let onDelete: (() -> Void)?
     @State private var isShowingThumbnailFileImporter = false
     @State private var errorAlertItem: Error?
     
@@ -53,13 +53,15 @@ struct WallpaperDetailView<A: Asset>: View {
             
             GroupBox {
                 HStack {
-                    Button(role: .destructive) {
-                        onDelete()
-                    } label: {
-                        Label("Delete", systemImage: "trash")
-                            .frame(maxWidth: .infinity)
+                    if let onDelete {
+                        Button(role: .destructive) {
+                            onDelete()
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .tint(.red)
                     }
-                    .tint(.red)
                     
                     Button {
                         try? jsonWallpaperCoordinator.saveData()

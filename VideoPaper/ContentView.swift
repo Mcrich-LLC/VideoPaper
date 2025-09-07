@@ -26,8 +26,10 @@ struct ContentView: View {
                             ForEach($jsonWallpaperCoordinator.filteredAssets) { $asset in
                                 if let thumbnailImage = asset.thumbnailImage {
                                     Button {
-                                        inspectedAsset = $asset
-                                        isPresentingInspector = true
+                                        withAnimation {
+                                            inspectedAsset = $asset
+                                            isPresentingInspector = true
+                                        }
                                     } label: {
                                         VStack {
                                             Image(nsImage: thumbnailImage)
@@ -54,35 +56,27 @@ struct ContentView: View {
                 }
             }
             .inspector(isPresented: $isPresentingInspector, content: {
-                Group {
-                    if let inspectedAsset {
-                        let newBinding: Binding<JsonAsset?> = Binding {
-                            jsonWallpaperCoordinator.assets.first(where: { $0.id == inspectedAsset.wrappedValue.id })
-                        } set: { newValue in
-                            guard let index = jsonWallpaperCoordinator.assets.firstIndex(where: { $0.id == inspectedAsset.wrappedValue.id }), let newValue else { return }
-                            jsonWallpaperCoordinator.assets[index] = newValue
-                        }
-
-                        if let binding = Binding(newBinding) {
-                            WallpaperDetailView(boundItem: binding) {
-                                self.inspectedAsset = nil
-                                DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(10)) {
-                                    try? jsonWallpaperCoordinator.deleteAsset(inspectedAsset.wrappedValue)
-                                }
-                            }
-                        } else {
-                            Text("Select a Wallpaper")
-                        }
-                    } else {
-                        Text("Select a Wallpaper")
-                    }
-                }
+                inspectorView
                 .inspectorColumnWidth(min: 200, ideal: 225, max: 400)
             })
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("\(isPresentingInspector ? "Hide" : "Show") Inspector", systemImage: "sidebar.right") {
                         isPresentingInspector.toggle()
+                    }
+                    .labelStyle(.iconOnly)
+                }
+                ToolbarItem(placement: .navigation) {
+                    Button("Create Wallpaper", systemImage: "plus") {
+                        do {
+                            let newId = try jsonWallpaperCoordinator.createBlankAsset()
+                            withAnimation {
+                                self.inspectedAsset = $jsonWallpaperCoordinator.filteredAssets.first(where: { $0.wrappedValue.id == newId })
+                                isPresentingInspector = true
+                            }
+                        } catch {
+                            print(error)
+                        }
                     }
                     .labelStyle(.iconOnly)
                 }
@@ -96,6 +90,31 @@ struct ContentView: View {
             }
         }
         .environment(jsonWallpaperCoordinator)
+    }
+    
+    @ViewBuilder
+    var inspectorView: some View {
+        if let inspectedAsset {
+            let newBinding: Binding<JsonAsset?> = Binding {
+                jsonWallpaperCoordinator.assets.first(where: { $0.id == inspectedAsset.wrappedValue.id })
+            } set: { newValue in
+                guard let index = jsonWallpaperCoordinator.assets.firstIndex(where: { $0.id == inspectedAsset.wrappedValue.id }), let newValue else { return }
+                jsonWallpaperCoordinator.assets[index] = newValue
+            }
+
+            if let binding = Binding(newBinding) {
+                WallpaperDetailView(boundItem: binding) {
+                    self.inspectedAsset = nil
+                    DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(10)) {
+                        try? jsonWallpaperCoordinator.deleteAsset(inspectedAsset.wrappedValue)
+                    }
+                }
+            } else {
+                Text("Select a Wallpaper")
+            }
+        } else {
+            Text("Select a Wallpaper")
+        }
     }
 }
 
