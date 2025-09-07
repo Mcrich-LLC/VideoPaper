@@ -131,6 +131,12 @@ final class JsonWallpaperCoordinator {
         }
     }
     
+    func deleteAsset(for id: UUID) throws {
+        guard let asset = assets.first(where: { $0.id == id }) else {
+            throw JsonWallpaperError.assetNotFound
+        }
+        try deleteAsset(asset)
+    }
     func deleteAsset(_ asset: JsonAsset) throws {
         filteredAssets.removeAll(where: { $0.id == asset.id })
         if let previewImageUrl = URL(string: asset.previewImage) {
@@ -159,6 +165,7 @@ final class JsonWallpaperCoordinator {
 
 enum JsonWallpaperError: Error {
     case invalidStructure
+    case assetNotFound
 }
 
 struct JsonObject: Codable {

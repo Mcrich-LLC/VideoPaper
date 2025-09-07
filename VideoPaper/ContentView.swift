@@ -13,7 +13,7 @@ struct ContentView: View {
     @Query private var items: [SDWallpaperVideo]
     @State var jsonWallpaperCoordinator = JsonWallpaperCoordinator()
     @State private var isPresentingInspector = true
-    @State private var inspectedAsset: Binding<JsonAsset>?
+    @State private var inspectedAsset: UUID?
 
     var body: some View {
         NavigationStack {
@@ -23,11 +23,11 @@ struct ContentView: View {
                 } else {
                     ScrollView {
                         LazyVGrid(columns: [.init(.adaptive(minimum: 150, maximum: 150))], alignment: .leading) {
-                            ForEach($jsonWallpaperCoordinator.filteredAssets) { $asset in
+                            ForEach(jsonWallpaperCoordinator.filteredAssets) { asset in
                                 if let thumbnailImage = asset.thumbnailImage {
                                     Button {
                                         withAnimation {
-                                            inspectedAsset = $asset
+                                            inspectedAsset = asset.id
                                             isPresentingInspector = true
                                         }
                                     } label: {
@@ -71,7 +71,7 @@ struct ContentView: View {
                         do {
                             let newId = try jsonWallpaperCoordinator.createBlankAsset()
                             withAnimation {
-                                self.inspectedAsset = $jsonWallpaperCoordinator.filteredAssets.first(where: { $0.wrappedValue.id == newId })
+                                self.inspectedAsset = newId
                                 isPresentingInspector = true
                             }
                         } catch {
@@ -96,9 +96,9 @@ struct ContentView: View {
     var inspectorView: some View {
         if let inspectedAsset {
             let newBinding: Binding<JsonAsset?> = Binding {
-                jsonWallpaperCoordinator.assets.first(where: { $0.id == inspectedAsset.wrappedValue.id })
+                jsonWallpaperCoordinator.assets.first(where: { $0.id == inspectedAsset })
             } set: { newValue in
-                guard let index = jsonWallpaperCoordinator.assets.firstIndex(where: { $0.id == inspectedAsset.wrappedValue.id }), let newValue else { return }
+                guard let index = jsonWallpaperCoordinator.assets.firstIndex(where: { $0.id == inspectedAsset }), let newValue else { return }
                 jsonWallpaperCoordinator.assets[index] = newValue
             }
 
@@ -106,7 +106,7 @@ struct ContentView: View {
                 WallpaperDetailView(boundItem: binding) {
                     self.inspectedAsset = nil
                     DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(10)) {
-                        try? jsonWallpaperCoordinator.deleteAsset(inspectedAsset.wrappedValue)
+                        try? jsonWallpaperCoordinator.deleteAsset(for: inspectedAsset)
                     }
                 }
             } else {

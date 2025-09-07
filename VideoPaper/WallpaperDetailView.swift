@@ -93,6 +93,7 @@ struct WallpaperDetailView<A: Asset>: View {
         .padding(.horizontal)
         .alert(for: $errorAlertItem)
         .onChange(of: boundItem, { oldValue, newValue in
+            guard oldValue.id != newValue.id else { return }
             if oldValue.`url-4K-SDR-240FPS`.isEmpty || oldValue.previewImage.isEmpty {
                 if let oldValue = oldValue as? JsonAsset {
                     try? jsonWallpaperCoordinator.deleteAsset(oldValue)
