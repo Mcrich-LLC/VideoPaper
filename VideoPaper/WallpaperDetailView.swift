@@ -90,7 +90,7 @@ struct WallpaperDetailView<A: Asset>: View {
                                 Label("Save", systemImage: "checkmark")
                                     .frame(maxWidth: .infinity)
                             }
-                            .disabled(boundItem.`url-4K-SDR-240FPS`.isEmpty || boundItem.previewImage.isEmpty || boundItem == editableItem)
+                            .disabled(editableItem.`url-4K-SDR-240FPS`.isEmpty || editableItem.previewImage.isEmpty || boundItem == editableItem)
                             .tint(.accentColor)
                         }
                         Divider()
