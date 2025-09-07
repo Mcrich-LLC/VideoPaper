@@ -47,7 +47,7 @@ Support for `.mp4` or other containers may be explored later.
 
 ## Installation
 
-### Option 1: Download (Recommended, Coming Soon)
+### Option 1: Download (Recommended)
 1. Visit the repository’s Releases page.
 2. Download the latest `VideoPaper.app` zip.
 3. Move the app to `/Applications` (optional but recommended).
