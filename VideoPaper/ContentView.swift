@@ -16,6 +16,8 @@ struct ContentView: View {
     @State private var isPresentingInspector = true
     @State private var inspectedAsset: UUID?
     
+    @State var activeDragger: JsonAsset?
+    
     @ViewBuilder
     var assetView: some View {
         if jsonWallpaperCoordinator.filteredAssets.isEmpty {
@@ -23,7 +25,7 @@ struct ContentView: View {
         } else {
             ScrollView {
                 LazyVGrid(columns: [.init(.adaptive(minimum: 150, maximum: 150))], alignment: .leading) {
-                    ForEach(jsonWallpaperCoordinator.filteredAssets) { asset in
+                    ReorderableForEach(jsonWallpaperCoordinator.filteredAssets.sorted(by: { $0.preferredOrder < $1.preferredOrder }), active: $activeDragger) { asset in
                         if let thumbnailImage = asset.thumbnailImage {
                             Button {
                                 withAnimation {
@@ -42,6 +44,14 @@ struct ContentView: View {
                             }
                             .buttonStyle(.plain)
                         }
+                    } moveAction: { from, to in
+                        for index in from {
+                            jsonWallpaperCoordinator.filteredAssets[index].preferredOrder = to
+                        }
+                    }
+                    .onChange(of: activeDragger) { oldValue, newValue in
+                        guard oldValue != newValue && newValue == nil else { return }
+                        try? jsonWallpaperCoordinator.saveData()
                     }
                 }
                 .padding()
@@ -190,6 +200,8 @@ struct ContentView: View {
         }
     }
 }
+
+
 
 #Preview {
     ContentView()
