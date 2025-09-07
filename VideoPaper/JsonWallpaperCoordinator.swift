@@ -232,17 +232,17 @@ struct JsonCategory: Codable, Identifiable, Equatable {
 
 struct JsonAsset: Codable, Asset {
     let id: UUID
-    let showInTopLevel: Bool
+    var showInTopLevel: Bool
     let shotID: String
     var localizedNameKey: String
     var accessibilityLabel: String
     var previewImage: String
     var `previewImage-900x580`: String
-    let pointsOfInterest: [String : String]
-    let includeInShuffle: Bool
+    var pointsOfInterest: [String : String]
+    var includeInShuffle: Bool
     var `url-4K-SDR-240FPS`: String
     let subcategories: [String]
-    let preferredOrder: Int
+    var preferredOrder: Int
     let categories: [String]
 
     var thumbnailImage: NSImage? {
@@ -265,17 +265,17 @@ struct JsonAsset: Codable, Asset {
 
 protocol Asset: Identifiable, Equatable {
     var id: UUID { get }
-    var showInTopLevel: Bool { get }
+    var showInTopLevel: Bool { get set }
     var shotID: String { get }
     var localizedNameKey: String { get set }
     var accessibilityLabel: String { get set }
     var previewImage: String { get set }
     var `previewImage-900x580`: String { get set }
-    var pointsOfInterest: [String : String] { get }
-    var includeInShuffle: Bool { get }
+    var pointsOfInterest: [String : String] { get set }
+    var includeInShuffle: Bool { get set }
     var `url-4K-SDR-240FPS`: String { get set }
     var subcategories: [String] { get }
-    var preferredOrder: Int { get }
+    var preferredOrder: Int { get set }
     var categories: [String] { get }
     var thumbnailImage: NSImage? { get }
     var videoItem: AVPlayerItem? { get }

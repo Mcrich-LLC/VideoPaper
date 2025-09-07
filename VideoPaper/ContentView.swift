@@ -20,6 +20,8 @@ struct ContentView: View {
             Group {
                 if jsonWallpaperCoordinator.assets.isEmpty {
                     ProgressView("Fetching Wallpapers...")
+                } else if jsonWallpaperCoordinator.filteredAssets.isEmpty {
+                    Text("You don't have any custom wallpapers. Press the + button to get started.")
                 } else {
                     ScrollView {
                         LazyVGrid(columns: [.init(.adaptive(minimum: 150, maximum: 150))], alignment: .leading) {
@@ -46,13 +48,6 @@ struct ContentView: View {
                         }
                         .padding()
                     }
-//                    .onChange(of: jsonWallpaperCoordinator.assets, {
-//                        do {
-//                            try jsonWallpaperCoordinator.saveData()
-//                        } catch {
-//                            print(error)
-//                        }
-//                    })
                 }
             }
             .inspector(isPresented: $isPresentingInspector, content: {

@@ -16,16 +16,23 @@ struct WallpaperDetailView<A: Asset>: View {
     
     @Environment(JsonWallpaperCoordinator.self) var jsonWallpaperCoordinator
     @State var isShowingSavedInlineMessage = false
+    @State var editableItem: A
+    
+    init(boundItem: Binding<A>, onDelete: (() -> Void)?) {
+        self._boundItem = boundItem
+        self.onDelete = onDelete
+        self.editableItem = boundItem.wrappedValue
+    }
     
     var body: some View {
         VStack {
             WallpaperVideoPlayer(boundItem: $boundItem)
             GroupBox {
                 VStack(alignment: .leading) {
-                    TextField("Name", text: $boundItem.localizedNameKey)
+                    TextField("Name", text: $editableItem.localizedNameKey)
                         .padding(.leading, 1)
-                        .onChange(of: boundItem.localizedNameKey) { _, newValue in
-                            boundItem.accessibilityLabel = newValue
+                        .onChange(of: editableItem.localizedNameKey) { _, newValue in
+                            editableItem.accessibilityLabel = newValue
                         }
                         .textFieldStyle(.plain)
                     
@@ -77,13 +84,13 @@ struct WallpaperDetailView<A: Asset>: View {
                         }
                         
                         Button {
-                            try? jsonWallpaperCoordinator.saveData()
+                            saveProperties()
                             isShowingSavedInlineMessage = true
                         } label: {
                             Label("Save", systemImage: "checkmark")
                                 .frame(maxWidth: .infinity)
                         }
-                        .disabled(boundItem.`url-4K-SDR-240FPS`.isEmpty || boundItem.previewImage.isEmpty)
+                        .disabled(boundItem.`url-4K-SDR-240FPS`.isEmpty || boundItem.previewImage.isEmpty || boundItem == editableItem)
                         .tint(.accentColor)
                     }
                 }
@@ -115,7 +122,23 @@ struct WallpaperDetailView<A: Asset>: View {
                 isShowingSavedInlineMessage = false
             }
         }
+        .onChange(of: boundItem, { _, newValue in
+            guard editableItem != newValue else {
+                return
+            }
+            editableItem = newValue
+        })
         .animation(.default, value: isShowingSavedInlineMessage)
+    }
+    
+    func saveProperties() {
+        boundItem.localizedNameKey = editableItem.localizedNameKey
+        boundItem.accessibilityLabel = editableItem.accessibilityLabel
+        boundItem.preferredOrder = editableItem.preferredOrder
+        boundItem.includeInShuffle = editableItem.includeInShuffle
+        boundItem.pointsOfInterest = editableItem.pointsOfInterest
+        boundItem.showInTopLevel = editableItem.showInTopLevel
+        try? jsonWallpaperCoordinator.saveData()
     }
 }
 
@@ -250,6 +273,7 @@ private struct AVPlayerControllerRepresented: NSViewRepresentable {
         
         // If current item isn’t matching, reset looper
         if (nsView.player?.currentItem?.asset as? AVURLAsset)?.url != (playerItem.asset as? AVURLAsset)?.url {
+            nsView.player?.replaceCurrentItem(with: playerItem)
             let looper = AVPlayerLooper(player: queuePlayer, templateItem: playerItem)
             context.coordinator.looper = looper
             queuePlayer.play()
