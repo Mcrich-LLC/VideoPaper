@@ -235,12 +235,12 @@ struct JsonObject: Codable {
     var assets: [JsonAsset]
 }
 
-struct JsonCategory: Codable, Identifiable, Equatable {
+struct JsonCategory: Codable, Category {
     let id: UUID
-    let localizedNameKey: String
-    let previewImage: String
-    let localizedDescriptionKey: String
-    let preferredOrder: Int
+    var localizedNameKey: String
+    var previewImage: String
+    var localizedDescriptionKey: String
+    var preferredOrder: Int
     var subcategories: [JsonCategory]?
     var representativeAssetID: String
 }
@@ -276,22 +276,4 @@ struct JsonAsset: Codable, Asset {
         let player = AVPlayerItem(url: videoUrl)
         return player
     }
-}
-
-protocol Asset: Identifiable, Equatable {
-    var id: UUID { get }
-    var showInTopLevel: Bool { get set }
-    var shotID: String { get }
-    var localizedNameKey: String { get set }
-    var accessibilityLabel: String { get set }
-    var previewImage: String { get set }
-    var `previewImage-900x580`: String { get set }
-    var pointsOfInterest: [String : String] { get set }
-    var includeInShuffle: Bool { get set }
-    var `url-4K-SDR-240FPS`: String { get set }
-    var subcategories: [String] { get }
-    var preferredOrder: Int { get set }
-    var categories: [String] { get }
-    var thumbnailImage: NSImage? { get }
-    var videoItem: AVPlayerItem? { get }
 }
