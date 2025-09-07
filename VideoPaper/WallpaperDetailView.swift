@@ -40,7 +40,7 @@ struct WallpaperDetailView<A: Asset>: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 8))
                         }
                         
-                        Button("Change Image") {
+                        Button("\(boundItem.thumbnailImage == nil ? "Set" : "Change") Image") {
                             isShowingThumbnailFileImporter.toggle()
                         }
                         .fileImporter(isPresented: $isShowingThumbnailFileImporter, allowedContentTypes: [.image, .png, .jpeg, .jpeg]) { result in
