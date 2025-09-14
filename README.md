@@ -48,6 +48,13 @@ Support for `.mp4` or other containers may be explored later.
 ## Installation
 
 ### Option 1: Download (Recommended)
+
+#### Homebrew (Also Recommended)
+1. Install [Homebrew](https://brew.sh) if necessary
+2. Tap our formulae with `brew tap mcrich-llc/homebrew-formulae`
+3. Then install VideoPaper with `brew install --cask VideoPaper`
+
+#### GitHub Releases
 1. Visit the repository’s Releases page.
 2. Download the latest `VideoPaper.app` zip.
 3. Move the app to `/Applications` (optional but recommended).
