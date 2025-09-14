@@ -256,7 +256,7 @@ struct JsonAsset: Codable, Asset {
     var localizedNameKey: String
     var accessibilityLabel: String
     var previewImage: String
-    var `previewImage-900x580`: String
+    var `previewImage-900x580`: String?
     var pointsOfInterest: [String : String]
     var includeInShuffle: Bool
     var `url-4K-SDR-240FPS`: String
