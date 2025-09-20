@@ -4,6 +4,8 @@ VideoPaper is a lightweight macOS utility that lets you add your own looping vid
 
 > Current format support: **`.mov` only** (H.264 or HEVC recommended). Additional formats may come later.
 
+https://github.com/user-attachments/assets/aa475087-e72f-4828-bca6-8fd488810f24
+
 ---
 
 ## Table of Contents
