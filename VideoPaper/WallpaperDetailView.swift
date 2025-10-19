@@ -299,11 +299,12 @@ private struct AVPlayerControllerRepresented: NSViewRepresentable {
         // Use AVQueuePlayer for looping
         let queuePlayer = AVQueuePlayer()
         view.player = queuePlayer
-        
-        // Attach looper
+
+        // Create looper with the provided playerItem
         let looper = AVPlayerLooper(player: queuePlayer, templateItem: playerItem)
-        context.coordinator.looper = looper // retain looper
-        
+        context.coordinator.looper = looper
+        context.coordinator.currentAsset = playerItem.asset
+
         queuePlayer.volume = 0
         queuePlayer.isMuted = false
         queuePlayer.play()
@@ -314,12 +315,19 @@ private struct AVPlayerControllerRepresented: NSViewRepresentable {
     func updateNSView(_ nsView: AVPlayerView, context: Context) {
         guard let queuePlayer = nsView.player as? AVQueuePlayer else { return }
         
-        // If current item isn’t matching, reset looper
-        if (nsView.player?.currentItem?.asset as? AVURLAsset)?.url != (playerItem.asset as? AVURLAsset)?.url {
+        // Check if the asset has changed
+        if context.coordinator.currentAsset !== playerItem.asset {
+            // Disable the old looper to release the previous playerItem
+            context.coordinator.looper?.disableLooping()
+            context.coordinator.looper = nil
+
+            // Clear the queue
             queuePlayer.removeAllItems()
-            
+
+            // Create a new looper
             let looper = AVPlayerLooper(player: queuePlayer, templateItem: playerItem)
             context.coordinator.looper = looper
+            context.coordinator.currentAsset = playerItem.asset
             queuePlayer.play()
         }
     }
@@ -330,6 +338,7 @@ private struct AVPlayerControllerRepresented: NSViewRepresentable {
     
     class Coordinator {
         var looper: AVPlayerLooper?
+        var currentAsset: AVAsset?
     }
 }
 
