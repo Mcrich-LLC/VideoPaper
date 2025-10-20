@@ -16,6 +16,7 @@ struct WallpaperDetailView<A: Asset>: View {
     
     @Environment(JsonWallpaperCoordinator.self) var jsonWallpaperCoordinator
     @State private var isShowingSavedInlineMessage = false
+    @State private var isThumbnailDropTargeted = false
     @State private var editableItem: A
     @State private var forceImageUpdate = false
     
@@ -50,21 +51,49 @@ struct WallpaperDetailView<A: Asset>: View {
                                     .aspectRatio(1, contentMode: .fill)
                                     .frame(width: 50, height: 50)
                                     .clipShape(RoundedRectangle(cornerRadius: 8))
+                            } else {
+                                ZStack {
+                                    LinearGradient(
+                                        colors: [.gray.opacity(0.3), .gray.opacity(0.6)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                    Image(systemName: "photo.on.rectangle.angled")
+                                        .font(.system(size: 18, weight: .semibold))
+                                        .foregroundStyle(.white.opacity(0.8))
+                                }
+                                .frame(width: 50, height: 50)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
                             }
-                            
+
+                            Spacer()
+
                             Button("\(editableItem.thumbnailImage == nil ? "Set" : "Change") Image") {
                                 isShowingThumbnailFileImporter.toggle()
                             }
-                            .fileImporter(isPresented: $isShowingThumbnailFileImporter, allowedContentTypes: [.image, .png, .jpeg, .jpeg]) { result in
+                            .fileImporter(isPresented: $isShowingThumbnailFileImporter, allowedContentTypes: [.image, .png, .jpeg]) { result in
                                 switch result {
                                 case .success(let success):
-                                    editableItem.previewImage = success.absoluteString
+                                    applyThumbnailURL(success)
                                 case .failure(let failure):
                                     print(failure)
                                     errorAlertItem = failure
                                 }
                             }
+
+                            Spacer()
                         }
+                        .onAssetDrop(
+                            acceptedTypes: [.image],
+                            isTargeted: $isThumbnailDropTargeted,
+                            allowedExtensions: ["png", "jpg", "jpeg"],
+                            perform: { url in
+                                self.applyThumbnailURL(url)
+                            },
+                            onError: { error in
+                                errorAlertItem = error
+                            }
+                        )
                     }
                     .frame(maxWidth: .infinity)
                 }
@@ -157,6 +186,11 @@ struct WallpaperDetailView<A: Asset>: View {
         boundItem.previewImage = editableItem.previewImage
         try? jsonWallpaperCoordinator.saveData()
     }
+
+    private func applyThumbnailURL(_ url: URL) {
+        editableItem.previewImage = url.absoluteString
+    }
+
 }
 
 struct WallpaperVideoPlayer<A: Asset>: View {
@@ -164,7 +198,8 @@ struct WallpaperVideoPlayer<A: Asset>: View {
     @State private var isHovering = false
     @State private var isShowingVideoImporter = false
     @State private var errorAlertItem: Error?
-    
+    @State private var isVideoDropTargeted = false
+
     @State var videoItem: AVPlayerItem?
     @Environment(JsonWallpaperCoordinator.self) var jsonWallpaperCoordinator
     
@@ -218,6 +253,18 @@ struct WallpaperVideoPlayer<A: Asset>: View {
         }
         .alert(for: $errorAlertItem)
         .buttonStyle(.plain)
+        .onAssetDrop(
+            acceptedTypes: [.movie],
+            isTargeted: $isVideoDropTargeted,
+            allowedExtensions: ["mov"],
+            perform: { url in
+                boundItem.videoURL = url.absoluteString
+                updateVideo()
+            },
+            onError: { error in
+                errorAlertItem = error
+            }
+        )
         .onChange(of: boundItem.videoURL, initial: true) { oldValue, newValue in
             guard oldValue != newValue || videoItem == nil else {
                 return
@@ -230,8 +277,11 @@ struct WallpaperVideoPlayer<A: Asset>: View {
         let videoItem = boundItem.videoItem
         self.videoItem = videoItem
         Task {
-            if let url = try await generateThumbnail() {
-                boundItem.previewImage = url.absoluteString
+            do {
+                guard let thumbURL = try await generateThumbnail() else { return }
+                await MainActor.run { boundItem.previewImage = thumbURL.absoluteString }
+            } catch {
+                await MainActor.run { errorAlertItem = error }
             }
         }
     }
@@ -341,4 +391,3 @@ private struct AVPlayerControllerRepresented: NSViewRepresentable {
         var currentAsset: AVAsset?
     }
 }
-
