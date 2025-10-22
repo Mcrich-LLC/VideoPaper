@@ -60,7 +60,7 @@ struct WallpaperDetailView<A: Asset>: View {
                                     )
                                     Image(systemName: "photo.on.rectangle.angled")
                                         .font(.system(size: 18, weight: .semibold))
-                                        .foregroundStyle(.white.opacity(0.8))
+                                        .foregroundStyle(.primary.opacity(0.8))
                                 }
                                 .frame(width: 50, height: 50)
                                 .clipShape(RoundedRectangle(cornerRadius: 8))
