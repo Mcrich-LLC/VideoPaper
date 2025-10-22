@@ -17,7 +17,6 @@ struct ContentView: View {
     @State private var isPresentingInspector = true
     @State private var inspectedAsset: UUID?
     @State private var errorAlertItem: Error?
-    @State private var isVideoDropTargeted = false
 
     @State var activeDragger: JsonAsset?
     
@@ -25,6 +24,8 @@ struct ContentView: View {
     var assetView: some View {
         if jsonWallpaperCoordinator.filteredAssets.isEmpty {
             Text("You don't have any custom wallpapers. Press the + button to get started.")
+                .frame(maxWidth: .infinity,
+                       maxHeight: .infinity)
         } else {
             ScrollView {
                 LazyVGrid(columns: [.init(.adaptive(minimum: 150, maximum: 150))], alignment: .leading) {
@@ -96,7 +97,6 @@ struct ContentView: View {
             }
             .onAssetDrop(
                 acceptedTypes: [.movie],
-                isTargeted: $isVideoDropTargeted,
                 allowedExtensions: ["mov"],
                 perform: { url in
                     Task {

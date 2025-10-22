@@ -16,7 +16,7 @@ class ThumbnailService {
     func generateThumbnail(for videoURL: String, at time: CMTime = CMTime(seconds: 0, preferredTimescale: 600)) async throws -> URL? {
 
         guard let videoURL = URL(string: videoURL) else {
-            return nil // throw
+            throw ThumbnailGenerationError.nonFileURL
         }
 
         let asset = AVURLAsset(url: videoURL)
@@ -31,10 +31,9 @@ class ThumbnailService {
         guard let tiffData = nsImage.tiffRepresentation,
               let bitmap = NSBitmapImageRep(data: tiffData),
               let pngData = bitmap.representation(using: .png, properties: [:]) else {
-            return nil
+            throw ThumbnailGenerationError.failedToConvertError
         }
 
-        // Ensure subdirectory for your app exists
         guard let appDir = getApplicationSupportDirectory() else { return nil }
 
         // Save thumbnail

@@ -16,7 +16,6 @@ struct WallpaperDetailView<A: Asset>: View {
     
     @Environment(JsonWallpaperCoordinator.self) var jsonWallpaperCoordinator
     @State private var isShowingSavedInlineMessage = false
-    @State private var isThumbnailDropTargeted = false
     @State private var editableItem: A
     @State private var forceImageUpdate = false
     
@@ -85,7 +84,6 @@ struct WallpaperDetailView<A: Asset>: View {
                         }
                         .onAssetDrop(
                             acceptedTypes: [.image],
-                            isTargeted: $isThumbnailDropTargeted,
                             allowedExtensions: ["png", "jpg", "jpeg"],
                             perform: { url in
                                 self.applyThumbnailURL(url)
@@ -198,7 +196,6 @@ struct WallpaperVideoPlayer<A: Asset>: View {
     @State private var isHovering = false
     @State private var isShowingVideoImporter = false
     @State private var errorAlertItem: Error?
-    @State private var isVideoDropTargeted = false
 
     @State var videoItem: AVPlayerItem?
     @Environment(JsonWallpaperCoordinator.self) var jsonWallpaperCoordinator
@@ -255,7 +252,6 @@ struct WallpaperVideoPlayer<A: Asset>: View {
         .buttonStyle(.plain)
         .onAssetDrop(
             acceptedTypes: [.movie],
-            isTargeted: $isVideoDropTargeted,
             allowedExtensions: ["mov"],
             perform: { url in
                 boundItem.videoURL = url.absoluteString
@@ -331,7 +327,7 @@ private struct AVPlayerControllerRepresented: NSViewRepresentable {
         context.coordinator.currentAsset = playerItem.asset
 
         queuePlayer.volume = 0
-        queuePlayer.isMuted = true
+        queuePlayer.isMuted = false
         queuePlayer.play()
         
         return view
@@ -354,8 +350,6 @@ private struct AVPlayerControllerRepresented: NSViewRepresentable {
             context.coordinator.looper = looper
             context.coordinator.currentAsset = playerItem.asset
 
-            queuePlayer.volume = 0
-            queuePlayer.isMuted = true
             queuePlayer.play()
         }
     }
