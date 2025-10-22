@@ -52,7 +52,7 @@ extension View {
 
                             if let allowed = allowedExtensions {
                                 let pathExtension = url.pathExtension.lowercased()
-                                if !pathExtension.isEmpty && !pathExtension.contains(pathExtension) {
+                                if !pathExtension.isEmpty && !allowed.contains(pathExtension) {
                                     throw FileDropError.invalidExtension(
                                         acceptedTypes: allowed
                                     )

@@ -99,7 +99,9 @@ struct ContentView: View {
                 isTargeted: $isVideoDropTargeted,
                 allowedExtensions: ["mov"],
                 perform: { url in
-                    addNewVideo(startingVideoURL: url.absoluteString)
+                    Task {
+                        await addNewVideo(startingVideoURL: url.absoluteString)
+                    }
                 },
                 onError: { error in
                     errorAlertItem = error
@@ -119,7 +121,9 @@ struct ContentView: View {
                 }
                 ToolbarItem(placement: .navigation) {
                     Button("Create Wallpaper", systemImage: "plus") {
-                        addNewVideo()
+                        Task {
+                            await addNewVideo()
+                        }
                     }
                     .labelStyle(.iconOnly)
                 }
@@ -165,11 +169,12 @@ struct ContentView: View {
         }
     }
 
-    func addNewVideo(startingVideoURL: String? = nil) {
+    func addNewVideo(startingVideoURL: String? = nil) async {
         do {
-            let newId = try jsonWallpaperCoordinator.createNewAsset(startingVideoURL: startingVideoURL)
-            withAnimation {
-                self.inspectedAsset = newId
+            let newId = try await jsonWallpaperCoordinator.createNewAsset(startingVideoURL: startingVideoURL)
+            self.inspectedAsset = newId
+
+           withAnimation {
                 isPresentingInspector = true
             }
         } catch {

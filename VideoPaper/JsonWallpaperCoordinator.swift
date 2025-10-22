@@ -186,23 +186,38 @@ final class JsonWallpaperCoordinator {
         let shouldRestartServices = !asset.videoURL.isEmpty || !asset.previewImage.isEmpty
         try saveData(restartServices: shouldRestartServices)
     }
-    
-    func createNewAsset(startingVideoURL: String? = nil) throws -> UUID {
+
+    func createNewAsset(startingVideoURL: String? = nil) async throws -> UUID {
         guard let category = filteredCategories.last,
               let subcategories = category.subcategories?.last
         else {
             throw JsonWallpaperError.invalidStructure
         }
+
+        // Defaults
+        var name = ""
+        var thumbnailURL = ""
+        var videoURL = ""
+
+        if let startingVideoURL {
+            name = startingVideoURL.readableFileName ?? ""
+            videoURL = startingVideoURL
+
+            if let thumbnail = try? await ThumbnailService.shared.generateThumbnail(for: startingVideoURL) {
+                thumbnailURL = thumbnail.absoluteString
+            }
+        }
+
         let asset = JsonAsset(id: UUID(),
                               showInTopLevel: true,
                               shotID: UUID().uuidString,
-                              localizedNameKey: "",
+                              localizedNameKey: name,
                               accessibilityLabel: "",
-                              previewImage: "",
+                              previewImage: thumbnailURL,
                               `previewImage-900x580`: "",
                               pointsOfInterest: [:],
                               includeInShuffle: false,
-                              `url-4K-SDR-240FPS`: startingVideoURL ?? "",
+                              `url-4K-SDR-240FPS`: videoURL,
                               subcategories: [subcategories.id.uuidString],
                               preferredOrder: filteredAssets.count+1, categories: [category.id.uuidString])
 

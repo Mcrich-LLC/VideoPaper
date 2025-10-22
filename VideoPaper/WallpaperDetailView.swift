@@ -278,37 +278,12 @@ struct WallpaperVideoPlayer<A: Asset>: View {
         self.videoItem = videoItem
         Task {
             do {
-                guard let thumbURL = try await generateThumbnail() else { return }
+                guard let thumbURL = try await ThumbnailService.shared.generateThumbnail(for: boundItem.videoURL) else { return }
                 await MainActor.run { boundItem.previewImage = thumbURL.absoluteString }
             } catch {
                 await MainActor.run { errorAlertItem = error }
             }
         }
-    }
-
-    func generateThumbnail(at time: CMTime = CMTime(seconds: 0, preferredTimescale: 600)) async throws -> URL? {
-        guard let videoItem else { return nil }
-        let generator = AVAssetImageGenerator(asset: videoItem.asset)
-        generator.appliesPreferredTrackTransform = true
-        
-        let (cgImage, _) = try await generator.image(at: time)
-        let nsImage = NSImage(cgImage: cgImage, size: .zero)
-        
-        // Convert NSImage to PNG data
-        guard let tiffData = nsImage.tiffRepresentation,
-              let bitmap = NSBitmapImageRep(data: tiffData),
-              let pngData = bitmap.representation(using: .png, properties: [:]) else {
-            return nil
-        }
-        
-        // Ensure subdirectory for your app exists
-        guard let appDir = getApplicationSupportDirectory() else { return nil }
-        
-        // Save thumbnail
-        let fileURL = appDir.appendingPathComponent("\(UUID().uuidString).png")
-        try pngData.write(to: fileURL)
-        
-        return fileURL
     }
 }
 
@@ -356,7 +331,7 @@ private struct AVPlayerControllerRepresented: NSViewRepresentable {
         context.coordinator.currentAsset = playerItem.asset
 
         queuePlayer.volume = 0
-        queuePlayer.isMuted = false
+        queuePlayer.isMuted = true
         queuePlayer.play()
         
         return view
@@ -378,6 +353,9 @@ private struct AVPlayerControllerRepresented: NSViewRepresentable {
             let looper = AVPlayerLooper(player: queuePlayer, templateItem: playerItem)
             context.coordinator.looper = looper
             context.coordinator.currentAsset = playerItem.asset
+
+            queuePlayer.volume = 0
+            queuePlayer.isMuted = true
             queuePlayer.play()
         }
     }
