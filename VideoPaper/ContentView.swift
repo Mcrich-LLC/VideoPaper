@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import AVKit
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
@@ -15,7 +16,9 @@ struct ContentView: View {
     @State var jsonWallpaperCoordinator = JsonWallpaperCoordinator()
     @State private var isPresentingInspector = true
     @State private var inspectedAsset: UUID?
-    
+    @State private var errorAlertItem: Error?
+    @State private var isVideoDropTargeted = false
+
     @State var activeDragger: JsonAsset?
     
     @ViewBuilder
@@ -91,6 +94,18 @@ struct ContentView: View {
                         }
                 }
             }
+            .onAssetDrop(
+                acceptedTypes: [.movie],
+                isTargeted: $isVideoDropTargeted,
+                allowedExtensions: ["mov"],
+                perform: { url in
+                    addNewVideo(startingVideoURL: url.absoluteString)
+                },
+                onError: { error in
+                    errorAlertItem = error
+                }
+            )
+
             .inspector(isPresented: $isPresentingInspector, content: {
                 inspectorView
                 .inspectorColumnWidth(min: 200, ideal: 225, max: 400)
@@ -104,20 +119,13 @@ struct ContentView: View {
                 }
                 ToolbarItem(placement: .navigation) {
                     Button("Create Wallpaper", systemImage: "plus") {
-                        do {
-                            let newId = try jsonWallpaperCoordinator.createBlankAsset()
-                            withAnimation {
-                                self.inspectedAsset = newId
-                                isPresentingInspector = true
-                            }
-                        } catch {
-                            print(error)
-                        }
+                        addNewVideo()
                     }
                     .labelStyle(.iconOnly)
                 }
             }
         }
+        .alert(for: $errorAlertItem)
         .onAppear {
             do {
                 try jsonWallpaperCoordinator.fetchData()
@@ -156,7 +164,19 @@ struct ContentView: View {
             Text("Select a Wallpaper")
         }
     }
-    
+
+    func addNewVideo(startingVideoURL: String? = nil) {
+        do {
+            let newId = try jsonWallpaperCoordinator.createNewAsset(startingVideoURL: startingVideoURL)
+            withAnimation {
+                self.inspectedAsset = newId
+                isPresentingInspector = true
+            }
+        } catch {
+            print(error)
+        }
+    }
+
     func loadSwiftData() {
         let preAdjustFilteredCategories = jsonWallpaperCoordinator.filteredCategories
         let preAdjustFilteredAssets = jsonWallpaperCoordinator.filteredAssets
