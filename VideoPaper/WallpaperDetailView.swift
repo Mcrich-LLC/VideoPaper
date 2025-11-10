@@ -50,21 +50,48 @@ struct WallpaperDetailView<A: Asset>: View {
                                     .aspectRatio(1, contentMode: .fill)
                                     .frame(width: 50, height: 50)
                                     .clipShape(RoundedRectangle(cornerRadius: 8))
+                            } else {
+                                ZStack {
+                                    LinearGradient(
+                                        colors: [.gray.opacity(0.3), .gray.opacity(0.6)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                    Image(systemName: "photo.on.rectangle.angled")
+                                        .font(.system(size: 18, weight: .semibold))
+                                        .foregroundStyle(.primary.opacity(0.8))
+                                }
+                                .frame(width: 50, height: 50)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
                             }
-                            
+
+                            Spacer()
+
                             Button("\(editableItem.thumbnailImage == nil ? "Set" : "Change") Image") {
                                 isShowingThumbnailFileImporter.toggle()
                             }
-                            .fileImporter(isPresented: $isShowingThumbnailFileImporter, allowedContentTypes: [.image, .png, .jpeg, .jpeg]) { result in
+                            .fileImporter(isPresented: $isShowingThumbnailFileImporter, allowedContentTypes: [.image, .png, .jpeg]) { result in
                                 switch result {
                                 case .success(let success):
-                                    editableItem.previewImage = success.absoluteString
+                                    applyThumbnailURL(success)
                                 case .failure(let failure):
                                     print(failure)
                                     errorAlertItem = failure
                                 }
                             }
+
+                            Spacer()
                         }
+                        .onAssetDrop(
+                            acceptedTypes: [.image],
+                            allowedExtensions: ["png", "jpg", "jpeg"],
+                            perform: { url in
+                                self.applyThumbnailURL(url)
+                            },
+                            onError: { error in
+                                errorAlertItem = error
+                            }
+                        )
                     }
                     .frame(maxWidth: .infinity)
                 }
@@ -157,6 +184,11 @@ struct WallpaperDetailView<A: Asset>: View {
         boundItem.previewImage = editableItem.previewImage
         try? jsonWallpaperCoordinator.saveData()
     }
+
+    private func applyThumbnailURL(_ url: URL) {
+        editableItem.previewImage = url.absoluteString
+    }
+
 }
 
 struct WallpaperVideoPlayer<A: Asset>: View {
@@ -164,7 +196,7 @@ struct WallpaperVideoPlayer<A: Asset>: View {
     @State private var isHovering = false
     @State private var isShowingVideoImporter = false
     @State private var errorAlertItem: Error?
-    
+
     @State var videoItem: AVPlayerItem?
     @Environment(JsonWallpaperCoordinator.self) var jsonWallpaperCoordinator
     
@@ -218,6 +250,17 @@ struct WallpaperVideoPlayer<A: Asset>: View {
         }
         .alert(for: $errorAlertItem)
         .buttonStyle(.plain)
+        .onAssetDrop(
+            acceptedTypes: [.movie],
+            allowedExtensions: ["mov"],
+            perform: { url in
+                boundItem.videoURL = url.absoluteString
+                updateVideo()
+            },
+            onError: { error in
+                errorAlertItem = error
+            }
+        )
         .onChange(of: boundItem.videoURL, initial: true) { oldValue, newValue in
             guard oldValue != newValue || videoItem == nil else {
                 return
@@ -230,35 +273,13 @@ struct WallpaperVideoPlayer<A: Asset>: View {
         let videoItem = boundItem.videoItem
         self.videoItem = videoItem
         Task {
-            if let url = try await generateThumbnail() {
-                boundItem.previewImage = url.absoluteString
+            do {
+                guard let thumbURL = try await ThumbnailService.shared.generateThumbnail(for: boundItem.videoURL) else { return }
+                await MainActor.run { boundItem.previewImage = thumbURL.absoluteString }
+            } catch {
+                await MainActor.run { errorAlertItem = error }
             }
         }
-    }
-
-    func generateThumbnail(at time: CMTime = CMTime(seconds: 0, preferredTimescale: 600)) async throws -> URL? {
-        guard let videoItem else { return nil }
-        let generator = AVAssetImageGenerator(asset: videoItem.asset)
-        generator.appliesPreferredTrackTransform = true
-        
-        let (cgImage, _) = try await generator.image(at: time)
-        let nsImage = NSImage(cgImage: cgImage, size: .zero)
-        
-        // Convert NSImage to PNG data
-        guard let tiffData = nsImage.tiffRepresentation,
-              let bitmap = NSBitmapImageRep(data: tiffData),
-              let pngData = bitmap.representation(using: .png, properties: [:]) else {
-            return nil
-        }
-        
-        // Ensure subdirectory for your app exists
-        guard let appDir = getApplicationSupportDirectory() else { return nil }
-        
-        // Save thumbnail
-        let fileURL = appDir.appendingPathComponent("\(UUID().uuidString).png")
-        try pngData.write(to: fileURL)
-        
-        return fileURL
     }
 }
 
@@ -328,6 +349,7 @@ private struct AVPlayerControllerRepresented: NSViewRepresentable {
             let looper = AVPlayerLooper(player: queuePlayer, templateItem: playerItem)
             context.coordinator.looper = looper
             context.coordinator.currentAsset = playerItem.asset
+
             queuePlayer.play()
         }
     }
@@ -341,4 +363,3 @@ private struct AVPlayerControllerRepresented: NSViewRepresentable {
         var currentAsset: AVAsset?
     }
 }
-
